@@ -1,31 +1,28 @@
 package main
 
 import (
-	// "context"
-	"fmt"
-
-	// "github.com/canonical/microcluster/v2/microcluster"
+	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
 
-	// "github.com/canonical/microceph/microceph/api/types"
-	// "github.com/canonical/microceph/microceph/ceph"
-	// "github.com/canonical/microceph/microceph/client"
+	"github.com/canonical/microceph/microceph/ceph"
 )
 
 type cmdClusterMaintenanceEnter struct {
 	common       *CmdControl
 
-	flagForce bool
+	flagBypassSafety bool
+	flagConfirmFailureDomainDowngrade bool
 }
 
 func (c *cmdClusterMaintenanceEnter) Command() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "enter <NAME>",
+		Use:   "enter <NAME> [--bypass-safety-checks=false] [--confirm-failure-domain-downgrade=false]",
 		Short: "Put a given server into maintenance mode.",
 		RunE:  c.Run,
 	}
 
-	cmd.Flags().BoolVarP(&c.flagForce, "force", "f", true, "Forcibly put the servier into maintenance mode.")
+	cmd.Flags().BoolVar(&c.flagBypassSafety, "bypass-safety-checks", false, "Bypass safety checks")
+	cmd.Flags().BoolVar(&c.flagConfirmFailureDomainDowngrade, "confirm-failure-domain-downgrade", false, "Confirm failure domain downgrade if required")
 	return cmd
 }
 
@@ -34,18 +31,20 @@ func (c *cmdClusterMaintenanceEnter) Run(cmd *cobra.Command, args []string) erro
 		return cmd.Help()
 	}
 
-	// m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir})
-	// if err != nil {
-	// 	return fmt.Errorf("unable to configure MicroCeph: %w", err)
-	// }
+	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir})
+	if err != nil {
+		return err
+	}
 
-	// cli, err := m.LocalClient()
-	// if err != nil {
-	// 	return err
-	// }
+	cli, err := m.LocalClient()
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("Called `microceph ceph cluster maintenance enter`.")
+	err = ceph.EnterMaintenance(cli, args[0], c.flagBypassSafety, c.flagConfirmFailureDomainDowngrade)
+	if err != nil {
+		return err
+	}
 
-	// TODO
 	return nil
 }

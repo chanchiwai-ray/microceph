@@ -1,21 +1,17 @@
 package main
 
 import (
-	// "context"
-	"fmt"
-
-	// "github.com/canonical/microcluster/v2/microcluster"
+	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
 
-	// "github.com/canonical/microceph/microceph/api/types"
-	// "github.com/canonical/microceph/microceph/ceph"
-	// "github.com/canonical/microceph/microceph/client"
+	"github.com/canonical/microceph/microceph/ceph"
 )
 
 type cmdClusterMaintenanceExit struct {
 	common       *CmdControl
 
 	flagForce bool
+	flagConfirmFailureDomainUpgrade bool
 }
 
 func (c *cmdClusterMaintenanceExit) Command() *cobra.Command {
@@ -25,7 +21,6 @@ func (c *cmdClusterMaintenanceExit) Command() *cobra.Command {
 		RunE:  c.Run,
 	}
 
-	cmd.Flags().BoolVarP(&c.flagForce, "force", "f", true, "Forcibly recover the server from maintenance mode.")
 	return cmd
 }
 
@@ -34,18 +29,20 @@ func (c *cmdClusterMaintenanceExit) Run(cmd *cobra.Command, args []string) error
 		return cmd.Help()
 	}
 
-	// m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir})
-	// if err != nil {
-	// 	return fmt.Errorf("unable to configure MicroCeph: %w", err)
-	// }
+	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir})
+	if err != nil {
+		return err
+	}
 
-	// cli, err := m.LocalClient()
-	// if err != nil {
-	// 	return err
-	// }
+	cli, err := m.LocalClient()
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("Called `microceph ceph cluster maintenance exit`.")
+	err = ceph.ExitMaintenance(cli, args[0])
+	if err != nil {
+		return err
+	}
 
-	// TODO
 	return nil
 }

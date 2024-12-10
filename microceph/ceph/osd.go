@@ -954,6 +954,33 @@ func outDownOSD(osd int64) error {
 	return nil
 }
 
+func inOSD(osd int64) error {
+	_, err := processExec.RunCommand("ceph", "osd", "in", fmt.Sprintf("osd.%d", osd))
+	if err != nil {
+		logger.Errorf("Failed to bring osd.%d in: %v", osd, err)
+		return fmt.Errorf("failed to bring osd.%d in: %w", osd, err)
+	}
+	return nil
+}
+
+func osdSetNoout() error {
+	_, err := processExec.RunCommand("ceph", "osd", "set", "noout")
+	if err != nil {
+		logger.Errorf("Failed to set noout flag: %v", err)
+		return fmt.Errorf("Failed to set noout flag: %w", err)
+	}
+	return nil
+}
+
+func osdUnsetNoout() error {
+	_, err := processExec.RunCommand("ceph", "osd", "unset", "noout")
+	if err != nil {
+		logger.Errorf("Failed to unset noout flag: %v", err)
+		return fmt.Errorf("Failed to unset noout flag: %w", err)
+	}
+	return nil
+}
+
 func safetyCheckStop(osd int64) error {
 	var safeStop bool
 
