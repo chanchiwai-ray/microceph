@@ -19,6 +19,7 @@ var Servers = map[string]rest.Server{
 					resourcesCmd,
 					servicesCmd,
 					configsCmd,
+					stopServiceCmd,
 					restartServiceCmd,
 					mdsServiceCmd,
 					mgrServiceCmd,

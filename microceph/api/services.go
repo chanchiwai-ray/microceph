@@ -61,6 +61,11 @@ var rbdMirroServiceCmd = rest.Endpoint{
 	Delete: rest.EndpointAction{Handler: cmdDeleteService, ProxyTarget: true},
 }
 
+var stopServiceCmd = rest.Endpoint{
+	Path: "services/stop",
+	Post: rest.EndpointAction{Handler: cmdStopServicePost, ProxyTarget: true},
+}
+
 // cmdMonGet returns the mon service status.
 func cmdMonGet(s state.State, r *http.Request) response.Response {
 
@@ -159,6 +164,40 @@ func cmdRGWServiceDelete(s state.State, r *http.Request) response.Response {
 	if err != nil {
 		logger.Errorf("Failed disabling RGW: %v", err)
 		return response.SmartError(err)
+	}
+
+	return response.EmptySyncResponse
+}
+
+// cmdStopService stops service
+func cmdStopServicePost(s state.State, r *http.Request) response.Response {
+	var service types.Service
+
+	err := json.NewDecoder(r.Body).Decode(&service)
+	if err != nil {
+		logger.Errorf("Failed decoding stop services: %v", err)
+		return response.InternalError(err)
+	}
+
+	// check if provided services are valid and available in microceph
+	valid_services := ceph.GetConfigTableServiceSet()
+	if _, ok := valid_services[service.Service]; !ok {
+		err := fmt.Errorf("%s is not a valid ceph service", service.Service)
+		logger.Errorf("%v", err)
+		return response.InternalError(err)
+	}
+
+	clusterServices, err := ceph.ListServices(r.Context(), s)
+	if err != nil {
+		logger.Errorf("failed fetching services from db: %v", err)
+		return response.SyncResponse(false, err)
+	}
+
+	err = ceph.StopService(clusterServices, service.Service, s.Name())
+	if err != nil {
+		url := s.Address().String()
+		logger.Errorf("Failed stopping %s on host %s", service.Service, url)
+		return response.SyncResponse(false, err)
 	}
 
 	return response.EmptySyncResponse

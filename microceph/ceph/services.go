@@ -257,3 +257,22 @@ func DeleteService(ctx context.Context, s interfaces.StateInterface, service str
 	return nil
 
 }
+
+// StopService stop a service in the node.
+func StopService(clusterServices types.Services, service string, hostname string) error {
+	if !isServicePlacementOnHost(clusterServices, service, hostname) {
+		logger.Info(
+			fmt.Sprintf("%s service is not on the current host", service),
+		)
+		return nil
+	}
+
+	err := snapStop(service, true)
+
+	if err != nil {
+		logger.Errorf("failed to stop daemon %q: %v", service, err)
+		return fmt.Errorf("failed to stop daemon %q: %w", service, err)
+	}
+
+	return nil
+}

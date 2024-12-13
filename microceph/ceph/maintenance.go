@@ -1,6 +1,7 @@
 package ceph
 
 import (
+	"context"
 	"fmt"
 
 	microCli "github.com/canonical/microcluster/v2/client"
@@ -105,6 +106,10 @@ func (m *maintenance) Run(operations []Operation, dryRun bool) error {
 	return nil
 }
 
+//
+// Operations
+//
+
 type Operation interface {
 	Run(string) error
 	DryRun(string) string
@@ -151,7 +156,7 @@ func (o *isOsdEnoughOps) Run(name string) error {
 
 	remains := 0
 	for _, disk := range disks {
-		if disk.Location != name{
+		if disk.Location != name {
 			remains++
 		}
 	}
@@ -361,7 +366,7 @@ func (o *stopNonOsdOps) Run(name string) error {
 	}
 	for _, service := range services {
 		if service.Location == name {
-			err = snapStop(service.Service, true)
+			err = client.SendStopServiceRequestReq(context.Background(), o.clusterClient, name, service.Service)
 			if err != nil {
 				return err
 			}
@@ -441,7 +446,7 @@ func (o *osdUnsetNooutOps) Run(name string) error {
 	if err != nil {
 		return err
 	}
-		fmt.Println("Unset osd noout.")
+	fmt.Println("Unset osd noout.")
 	return nil
 }
 

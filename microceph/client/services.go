@@ -102,3 +102,18 @@ func SendRestartRequestToClusterMembers(ctx context.Context, s state.State, serv
 
 	return nil
 }
+
+// SendStopServiceRequestToClusterMembers sends the desired service to be stopped on a target host
+func SendStopServiceRequestReq(ctx context.Context, c *client.Client, target string, service string) error {
+	queryCtx, cancel := context.WithTimeout(ctx, time.Second*120)
+	defer cancel()
+
+	c = c.UseTarget(target)
+	err := c.Query(queryCtx, "POST", types.ExtendedPathPrefix, api.NewURL().Path("services", "stop"), types.Service{Service: service}, nil)
+	if err != nil {
+		url := c.URL()
+		logger.Errorf("stop error: %v", err)
+		return fmt.Errorf("failed Forwarding To: %s: %w", url.String(), err)
+	}
+	return nil
+}
