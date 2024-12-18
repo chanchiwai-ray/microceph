@@ -1199,3 +1199,20 @@ func ListPools(application string) []CephPool {
 	logger.Infof("OSD: Filtered Pool list %v", filterdRet)
 	return filterdRet
 }
+
+// SetOsdState start or stop OSD service
+func SetOsdState(up bool) error {
+	var err error
+
+	switch up {
+	case true:
+		err = snapStart("osd", true)
+	case false:
+		err = snapStop("osd", true)
+	}
+
+	if err != nil {
+		return fmt.Errorf("Failed to change the state of OSD service: %w", err)
+	}
+	return nil
+}

@@ -2,6 +2,7 @@ package ceph
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/canonical/lxd/shared/api"
@@ -100,6 +101,22 @@ func addOsdTreeExpectations(r *mocks.Runner) {
 
 }
 
+func addSetOsdStateUpExpectations(r *mocks.Runner) {
+	r.On("RunCommand", "snapctl", "start", "microceph.osd", "--enable").Return("ok", nil).Once()
+}
+
+func addSetOsdStateDownExpectations(r *mocks.Runner) {
+	r.On("RunCommand", "snapctl", "stop", "microceph.osd", "--disable").Return("ok", nil).Once()
+}
+
+func addSetOsdStateUpFailedExpectations(r *mocks.Runner) {
+	r.On("RunCommand", "snapctl", "start", "microceph.osd", "--enable").Return("fail", fmt.Errorf("some errors")).Once()
+}
+
+func addSetOsdStateDownFailedExpectations(r *mocks.Runner) {
+	r.On("RunCommand", "snapctl", "stop", "microceph.osd", "--disable").Return("fail", fmt.Errorf("some errors")).Once()
+}
+
 func (s *osdSuite) SetupTest() {
 
 	s.BaseSuite.SetupTest()
@@ -183,4 +200,36 @@ func (s *osdSuite) TestHaveOSDInCeph() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), res, false)
 
+}
+
+// TestSetOsdStateOkay tests the SetOsdState function when no error occurs
+func (s *osdSuite) TestSetOsdStateOkay() {
+	r := mocks.NewRunner(s.T())
+	addSetOsdStateUpExpectations(r)
+	addSetOsdStateDownExpectations(r)
+
+	// patch processExec
+	processExec = r
+
+	err := SetOsdState(true)
+	assert.NoError(s.T(), err)
+
+	err = SetOsdState(false)
+	assert.NoError(s.T(), err)
+}
+
+// TestSetOsdStateFail tests the SetOsdState function when error occurs
+func (s *osdSuite) TestSetOsdStateFail() {
+	r := mocks.NewRunner(s.T())
+	addSetOsdStateUpFailedExpectations(r)
+	addSetOsdStateDownFailedExpectations(r)
+
+	// patch processExec
+	processExec = r
+
+	err := SetOsdState(true)
+	assert.Error(s.T(), err)
+
+	err = SetOsdState(false)
+	assert.Error(s.T(), err)
 }
