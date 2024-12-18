@@ -93,10 +93,86 @@ func cmdEnableServicePut(s state.State, r *http.Request) response.Response {
 	return response.SyncResponse(true, nil)
 }
 
-// Service Reload Endpoint.
+// Service stop/start/restart Endpoint.
+var stopServiceCmd = rest.Endpoint{
+	Path: "services/stop",
+	Post: rest.EndpointAction{Handler: cmdStopServicePost, ProxyTarget: true},
+}
+var startServiceCmd = rest.Endpoint{
+	Path: "services/start",
+	Post: rest.EndpointAction{Handler: cmdStartServicePost, ProxyTarget: true},
+}
 var restartServiceCmd = rest.Endpoint{
 	Path: "services/restart",
 	Post: rest.EndpointAction{Handler: cmdRestartServicePost, ProxyTarget: true},
+}
+
+// cmdStopService stops service
+func cmdStopServicePost(s state.State, r *http.Request) response.Response {
+	var service types.Service
+
+	err := json.NewDecoder(r.Body).Decode(&service)
+	if err != nil {
+		logger.Errorf("Failed decoding stop service: %v", err)
+		return response.InternalError(err)
+	}
+
+	// check if provided services are valid and available in microceph
+	valid_services := ceph.GetConfigTableServiceSet()
+	if _, ok := valid_services[service.Service]; !ok {
+		err := fmt.Errorf("%s is not a valid ceph service", service.Service)
+		logger.Errorf("%v", err)
+		return response.InternalError(err)
+	}
+
+	clusterServices, err := ceph.ListServices(r.Context(), s)
+	if err != nil {
+		logger.Errorf("failed fetching service from db: %v", err)
+		return response.SyncResponse(false, err)
+	}
+
+	err = ceph.StopService(clusterServices, service.Service, s.Name())
+	if err != nil {
+		url := s.Address().String()
+		logger.Errorf("Failed stopping %s on host %s", service.Service, url)
+		return response.SyncResponse(false, err)
+	}
+
+	return response.EmptySyncResponse
+}
+
+// cmdStartServicePost starts service
+func cmdStartServicePost(s state.State, r *http.Request) response.Response {
+	var service types.Service
+
+	err := json.NewDecoder(r.Body).Decode(&service)
+	if err != nil {
+		logger.Errorf("Failed decoding start service: %v", err)
+		return response.InternalError(err)
+	}
+
+	// check if provided services are valid and available in microceph
+	valid_services := ceph.GetConfigTableServiceSet()
+	if _, ok := valid_services[service.Service]; !ok {
+		err := fmt.Errorf("%s is not a valid ceph service", service.Service)
+		logger.Errorf("%v", err)
+		return response.InternalError(err)
+	}
+
+	clusterServices, err := ceph.ListServices(r.Context(), s)
+	if err != nil {
+		logger.Errorf("failed fetching service from db: %v", err)
+		return response.SyncResponse(false, err)
+	}
+
+	err = ceph.StartService(clusterServices, service.Service, s.Name())
+	if err != nil {
+		url := s.Address().String()
+		logger.Errorf("Failed starting %s on host %s", service.Service, url)
+		return response.SyncResponse(false, err)
+	}
+
+	return response.EmptySyncResponse
 }
 
 func cmdRestartServicePost(s state.State, r *http.Request) response.Response {

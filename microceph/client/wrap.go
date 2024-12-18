@@ -14,6 +14,8 @@ type ClientInterface interface {
 	GetDisks(*microCli.Client) (types.Disks, error)
 	GetServices(*microCli.Client) (types.Services, error)
 	DeleteService(*microCli.Client, string, string) error
+	StopService(*microCli.Client, string, string) error
+	StartService(*microCli.Client, string, string) error
 	DeleteClusterMember(*microCli.Client, string, bool) error
 }
 
@@ -43,6 +45,16 @@ func (c ClientImpl) GetDisks(cli *microCli.Client) (types.Disks, error) {
 // GetServices wraps the GetServices function above
 func (c ClientImpl) GetServices(cli *microCli.Client) (types.Services, error) {
 	return GetServices(context.Background(), cli)
+}
+
+// StopService wraps the StopService function
+func (c ClientImpl) StopService(cli *microCli.Client, target string, service string) error {
+	return StopService(context.Background(), cli, target, service)
+}
+
+// StartService wraps the StartService function
+func (c ClientImpl) StartService(cli *microCli.Client, target string, service string) error {
+	return StartService(context.Background(), cli, target, service)
 }
 
 // DeleteService wraps the DeleteService function

@@ -58,11 +58,123 @@ func addMonDumpExpectations(r *mocks.Runner) {
 	}...).Return(string(monDump[:]), nil).Twice()
 }
 
+func addServiceStopExpectations(r *mocks.Runner, services []string) {
+	for _, service := range services {
+		r.On("RunCommand", []interface{}{
+			"snapctl", "stop", fmt.Sprintf("microceph.%s", service),
+		}...).Return("ok", nil).Once()
+	}
+}
+
+func addServiceStopErrorExpectations(r *mocks.Runner, services []string) {
+	for _, service := range services {
+		r.On("RunCommand", []interface{}{
+			"snapctl", "stop", fmt.Sprintf("microceph.%s", service),
+		}...).Return("fail", fmt.Errorf("some reasons")).Once()
+	}
+}
+
+func addServiceStartExpectations(r *mocks.Runner, services []string) {
+	for _, service := range services {
+		r.On("RunCommand", []interface{}{
+			"snapctl", "start", fmt.Sprintf("microceph.%s", service),
+		}...).Return("ok", nil).Once()
+	}
+}
+
+func addServiceStartErrorExpectations(r *mocks.Runner, services []string) {
+	for _, service := range services {
+		r.On("RunCommand", []interface{}{
+			"snapctl", "start", fmt.Sprintf("microceph.%s", service),
+		}...).Return("fail", fmt.Errorf("some reasons")).Once()
+	}
+}
+
 func addServiceRestartExpectations(r *mocks.Runner, services []string) {
 	for _, service := range services {
 		r.On("RunCommand", []interface{}{
 			"snapctl", "restart", fmt.Sprintf("microceph.%s", service),
 		}...).Return("ok", nil).Once()
+	}
+}
+
+func (s *servicesSuite) TestStopService() {
+	// any service that returns from ListServices is okay
+	services := types.Services{
+		types.Service{Service: "mon", Location: "foohost"},
+	}
+
+	r := mocks.NewRunner()
+	addServiceStopExpectations(r, services)
+	// patch processExec singleton
+	processExec = r
+
+	// services are defined
+	for _, svc := range services {
+		err := StopService(services, svc, "foohost")
+		assert.NoError(s.T(), err)
+	}
+
+	// unknown service will be skipped
+	err := StopService(services, "unknown", "foohost")
+	assert.NoError(s.T(), err)
+}
+
+func (s *servicesSuite) TestStopServiceError() {
+	// any service that returns from ListServices is okay
+	services := types.Services{
+		types.Service{Service: "mon", Location: "foohost"},
+	}
+
+	r := mocks.NewRunner()
+	addServiceStopErrorExpectations(r, services)
+	// patch processExec singleton
+	processExec = r
+
+	// services are defined but command failed
+	for _, svc := range services {
+		err := StopService(services, svc, "foohost")
+		assert.Error(s.T(), err)
+	}
+}
+
+func (s *servicesSuite) TestStartService() {
+	// any service that returns from ListServices is okay
+	services := types.Services{
+		types.Service{Service: "mon", Location: "foohost"},
+	}
+
+	r := mocks.NewRunner()
+	addServiceStartExpectations(r, services)
+	// patch processExec singleton
+	processExec = r
+
+	// services are defined
+	for _, svc := range services {
+		err := StartService(services, svc, "foohost")
+		assert.NoError(s.T(), err)
+	}
+
+	// unknown service will be skipped
+	err := StartService(services, "unknown", "foohost")
+	assert.NoError(s.T(), err)
+}
+
+func (s *servicesSuite) TestStartServiceError() {
+	// any service that returns from ListServices is okay
+	services := types.Services{
+		types.Service{Service: "mon", Location: "foohost"},
+	}
+
+	r := mocks.NewRunner()
+	addServiceStartErrorExpectations(r, services)
+	// patch processExec singleton
+	processExec = r
+
+	// services are defined but command failed
+	for _, svc := range services {
+		err := StartService(services, svc, "foohost")
+		assert.Error(s.T(), err)
 	}
 }
 

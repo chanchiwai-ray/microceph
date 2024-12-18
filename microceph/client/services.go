@@ -61,6 +61,36 @@ func SendServicePlacementReq(ctx context.Context, c *client.Client, data *types.
 	return nil
 }
 
+// StopService sends the request to stop the desired service on a target host
+func StopService(ctx context.Context, c *client.Client, target string, service string) error {
+	queryCtx, cancel := context.WithTimeout(ctx, time.Second*120)
+	defer cancel()
+
+	c = c.UseTarget(target)
+	err := c.Query(queryCtx, "POST", types.ExtendedPathPrefix, api.NewURL().Path("services", "stop"), types.Service{Service: service}, nil)
+	if err != nil {
+		url := c.URL()
+		logger.Errorf("stop error: %v", err)
+		return fmt.Errorf("failed Forwarding To: %s: %w", url.String(), err)
+	}
+	return nil
+}
+
+// StartService sends the request to start the desired service on a target host
+func StartService(ctx context.Context, c *client.Client, target string, service string) error {
+	queryCtx, cancel := context.WithTimeout(ctx, time.Second*120)
+	defer cancel()
+
+	c = c.UseTarget(target)
+	err := c.Query(queryCtx, "POST", types.ExtendedPathPrefix, api.NewURL().Path("services", "start"), types.Service{Service: service}, nil)
+	if err != nil {
+		url := c.URL()
+		logger.Errorf("stop error: %v", err)
+		return fmt.Errorf("failed Forwarding To: %s: %w", url.String(), err)
+	}
+	return nil
+}
+
 // Sends a request to the host to restart the provided service.
 func RestartService(ctx context.Context, c *client.Client, data *types.Services) error {
 	// 120 second timeout for waiting.
