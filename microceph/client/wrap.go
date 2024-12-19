@@ -56,7 +56,7 @@ func (c ClientImpl) DeleteClusterMember(cli *microCli.Client, name string, force
 	return cli.DeleteClusterMember(context.Background(), name, force)
 }
 
-// PutOsds wraps the Putosds function
+// PutOsds wraps the PutOsds function
 func (c ClientImpl) PutOsds(cli *microCli.Client, up bool, target string) error {
 	return PutOsds(context.Background(), cli, up, target)
 }
