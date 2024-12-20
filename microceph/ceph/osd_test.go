@@ -258,8 +258,8 @@ func (s *osdSuite) TestSetOsdStateFail() {
 	assert.Error(s.T(), err)
 }
 
-// TestOsdNooutFlagOkay tests the osdNooutFlag function when no error occurs
-func (s *osdSuite) TestOsdNooutFlagOkay() {
+// TestSetOsdNooutFlagOkay tests the setOsdNooutFlag function when no error occurs
+func (s *osdSuite) TestSetOsdNooutFlagOkay() {
 	r := mocks.NewRunner(s.T())
 	addOsdtNooutFlagTrueExpectations(r)
 	addOsdtNooutFlagFalseExpectations(r)
@@ -267,22 +267,22 @@ func (s *osdSuite) TestOsdNooutFlagOkay() {
 	// patch processExec
 	processExec = r
 
-	err := osdNooutFlag(true)
+	err := setOsdNooutFlag(true)
 	assert.NoError(s.T(), err)
 
-	err = osdNooutFlag(false)
+	err = setOsdNooutFlag(false)
 	assert.NoError(s.T(), err)
 }
 
-// TestOsdNooutFlagFail tests the osdNooutFlag function when error occurs
-func (s *osdSuite) TestOsdNooutFlagFail() {
+// TestSetOsdNooutFlagFail tests the setOsdNooutFlag function when error occurs
+func (s *osdSuite) TestSetOsdNooutFlagFail() {
 	r := mocks.NewRunner(s.T())
 	addOsdtNooutFlagFailedExpectations(r)
 
 	// patch processExec
 	processExec = r
 
-	err := osdNooutFlag(true)
+	err := setOsdNooutFlag(true)
 	assert.Error(s.T(), err)
 }
 

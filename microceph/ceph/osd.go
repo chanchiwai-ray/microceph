@@ -954,7 +954,7 @@ func outDownOSD(osd int64) error {
 	return nil
 }
 
-func osdNooutFlag(set bool) error {
+func setOsdNooutFlag(set bool) error {
 	var command string
 
 	switch set {

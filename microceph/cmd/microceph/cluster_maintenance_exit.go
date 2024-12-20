@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
 
@@ -36,14 +37,26 @@ func (c *cmdClusterMaintenanceExit) Run(cmd *cobra.Command, args []string) error
 		return err
 	}
 
-	clusterClient, err := m.LocalClient()
+	cli, err := m.LocalClient()
 	if err != nil {
 		return err
 	}
 
-	err = ceph.ExitMaintenance(clusterClient, client.MClient, args[0], c.flagDryRun)
+	name := args[0]
+	operations := []ceph.Operation{
+		&ceph.CheckNodeInClusterOps{client.MClient, cli},
+	}
+
+	// idempotently unset noout and start osd service
+	operations = append(operations, []ceph.Operation{
+		&ceph.UnsetNooutOps{},
+		&ceph.AssertNooutFlagUnsetOps{},
+		&ceph.StartOsdOps{client.MClient, cli},
+	}...)
+
+	err = ceph.RunOperations(name, operations, c.flagDryRun)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to exit maintenance mode: %v", err)
 	}
 
 	return nil

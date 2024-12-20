@@ -14,17 +14,17 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestMaintenance(t *testing.T) {
-	suite.Run(t, new(maintenanceSuite))
+func TestOperations(t *testing.T) {
+	suite.Run(t, new(operationsSuite))
 }
 
-// maintenanceSuite is the test suite for maintenance mode.
-type maintenanceSuite struct {
+// operationsSuite is the test suite for maintenance mode.
+type operationsSuite struct {
 	tests.BaseSuite
 	TestStateInterface *mocks.StateInterface
 }
 
-func (s *maintenanceSuite) TestCheckNodeInClusterOpsTrue() {
+func (s *operationsSuite) TestCheckNodeInClusterOpsTrue() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("GetClusterMembers", mock.Anything).Return([]string{"microceph-0", "microceph-1"}, nil).Once()
 
@@ -32,12 +32,12 @@ func (s *maintenanceSuite) TestCheckNodeInClusterOpsTrue() {
 	client.MClient = m
 
 	// node microceph-0 is in the cluster
-	ops := checkNodeInClusterOps{client.MClient, nil}
+	ops := CheckNodeInClusterOps{client.MClient, nil}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestCheckNodeInClusterOpsFalse() {
+func (s *operationsSuite) TestCheckNodeInClusterOpsFalse() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("GetClusterMembers", mock.Anything).Return([]string{"microceph-0", "microceph-1"}, nil).Once()
 
@@ -45,12 +45,12 @@ func (s *maintenanceSuite) TestCheckNodeInClusterOpsFalse() {
 	client.MClient = m
 
 	// node microceph-2 is not in the cluster
-	ops := checkNodeInClusterOps{client.MClient, nil}
+	ops := CheckNodeInClusterOps{client.MClient, nil}
 	err := ops.Run("microceph-2")
 	assert.ErrorContains(s.T(), err, "not found")
 }
 
-func (s *maintenanceSuite) TestCheckNodeInClusterOpsError() {
+func (s *operationsSuite) TestCheckNodeInClusterOpsError() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("GetClusterMembers", mock.Anything).Return([]string{}, fmt.Errorf("some reasons")).Once()
 
@@ -58,12 +58,12 @@ func (s *maintenanceSuite) TestCheckNodeInClusterOpsError() {
 	client.MClient = m
 
 	// cannot get cluster member
-	ops := checkNodeInClusterOps{client.MClient, nil}
+	ops := CheckNodeInClusterOps{client.MClient, nil}
 	err := ops.Run("some-node-name")
 	assert.ErrorContains(s.T(), err, "Error getting cluster members")
 }
 
-func (s *maintenanceSuite) TestCheckOsdOkToStopOpsTrue() {
+func (s *operationsSuite) TestCheckOsdOkToStopOpsTrue() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("GetDisks", mock.Anything).Return(
 		types.Disks{
@@ -87,12 +87,12 @@ func (s *maintenanceSuite) TestCheckOsdOkToStopOpsTrue() {
 	processExec = r
 
 	// osd.1 in microceph-0 is okay to stop
-	ops := checkOsdOkToStopOps{client.MClient, nil}
+	ops := CheckOsdOkToStopOps{client.MClient, nil}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestCheckOsdOkToStopOpsFalse() {
+func (s *operationsSuite) TestCheckOsdOkToStopOpsFalse() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("GetDisks", mock.Anything).Return(
 		types.Disks{
@@ -116,12 +116,12 @@ func (s *maintenanceSuite) TestCheckOsdOkToStopOpsFalse() {
 	processExec = r
 
 	// osd.1 in microceph-0 is not okay to stop
-	ops := checkOsdOkToStopOps{client.MClient, nil}
+	ops := CheckOsdOkToStopOps{client.MClient, nil}
 	err := ops.Run("microceph-0")
 	assert.ErrorContains(s.T(), err, "cannot be safely stopped")
 }
 
-func (s *maintenanceSuite) TestCheckOsdOkToStopOpsError() {
+func (s *operationsSuite) TestCheckOsdOkToStopOpsError() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("GetDisks", mock.Anything).Return(types.Disks{}, fmt.Errorf("some reasons")).Once()
 
@@ -129,12 +129,12 @@ func (s *maintenanceSuite) TestCheckOsdOkToStopOpsError() {
 	client.MClient = m
 
 	// cannot get disks
-	ops := checkOsdOkToStopOps{client.MClient, nil}
+	ops := CheckOsdOkToStopOps{client.MClient, nil}
 	err := ops.Run("some-node-name")
 	assert.ErrorContains(s.T(), err, "Error getting disks")
 }
 
-func (s *maintenanceSuite) TestCheckNonOsdSvcEnoughOpsTrue() {
+func (s *operationsSuite) TestCheckNonOsdSvcEnoughOpsTrue() {
 	m := mocks.NewClientInterface(s.T())
 	// 4 mons, 1 mds, 1 mgr
 	m.On("GetServices", mock.Anything).Return(
@@ -169,12 +169,12 @@ func (s *maintenanceSuite) TestCheckNonOsdSvcEnoughOpsTrue() {
 	client.MClient = m
 
 	// microceph-3 go to maintenance mode -> 3 mons, 1 mds, 1 mgr -> ok
-	ops := checkNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
+	ops := CheckNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
 	err := ops.Run("microceph-3")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestCheckNonOsdSvcEnoughOpsFalse() {
+func (s *operationsSuite) TestCheckNonOsdSvcEnoughOpsFalse() {
 	m := mocks.NewClientInterface(s.T())
 	// 4 mons, 1 mds, 1 mgr
 	m.On("GetServices", mock.Anything).Return(
@@ -209,12 +209,12 @@ func (s *maintenanceSuite) TestCheckNonOsdSvcEnoughOpsFalse() {
 	client.MClient = m
 
 	// microceph-0 go to maintenance mode -> 3 mons, 0 mds, 0 mgr -> no ok
-	ops := checkNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
+	ops := CheckNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestCheckNonOsdSvcEnoughOpsError() {
+func (s *operationsSuite) TestCheckNonOsdSvcEnoughOpsError() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("GetServices", mock.Anything).Return(types.Services{}, fmt.Errorf("some reasons")).Once()
 
@@ -222,175 +222,175 @@ func (s *maintenanceSuite) TestCheckNonOsdSvcEnoughOpsError() {
 	client.MClient = m
 
 	// cannot get services
-	ops := checkNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
+	ops := CheckNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
 	err := ops.Run("some-node-name")
 	assert.ErrorContains(s.T(), err, "Error getting services")
 }
 
-func (s *maintenanceSuite) TestSetNooutOpsOkay() {
+func (s *operationsSuite) TestSetNooutOpsOkay() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "set", "noout").Return("ok", nil).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := setNooutOps{}
+	ops := SetNooutOps{}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestSetNooutOpsFail() {
+func (s *operationsSuite) TestSetNooutOpsFail() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "set", "noout").Return("fail", fmt.Errorf("some reasons")).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := setNooutOps{}
+	ops := SetNooutOps{}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestAssertNooutFlagSetOpsTrue() {
+func (s *operationsSuite) TestAssertNooutFlagSetOpsTrue() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "dump").Return("flags noout", nil).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := assertNooutFlagSetOps{}
+	ops := AssertNooutFlagSetOps{}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestAssertNooutFlagSetOpsFalse() {
+func (s *operationsSuite) TestAssertNooutFlagSetOpsFalse() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "dump").Return("flags", nil).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := assertNooutFlagSetOps{}
+	ops := AssertNooutFlagSetOps{}
 	err := ops.Run("microceph-0")
 	assert.ErrorContains(s.T(), err, "unset")
 }
 
-func (s *maintenanceSuite) TestAssertNooutFlagSetOpsError() {
+func (s *operationsSuite) TestAssertNooutFlagSetOpsError() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "dump").Return("fail", fmt.Errorf("some reasons")).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := assertNooutFlagSetOps{}
+	ops := AssertNooutFlagSetOps{}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestAssertNooutFlagUnsetOpsTrue() {
+func (s *operationsSuite) TestAssertNooutFlagUnsetOpsTrue() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "dump").Return("flags", nil).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := assertNooutFlagUnsetOps{}
+	ops := AssertNooutFlagUnsetOps{}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestAssertNooutFlagUnsetOpsFalse() {
+func (s *operationsSuite) TestAssertNooutFlagUnsetOpsFalse() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "dump").Return("flags noout", nil).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := assertNooutFlagUnsetOps{}
+	ops := AssertNooutFlagUnsetOps{}
 	err := ops.Run("microceph-0")
 	assert.ErrorContains(s.T(), err, "set")
 }
 
-func (s *maintenanceSuite) TestAssertNooutFlagUnsetOpsError() {
+func (s *operationsSuite) TestAssertNooutFlagUnsetOpsError() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "dump").Return("fail", fmt.Errorf("some reasons")).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := assertNooutFlagUnsetOps{}
+	ops := AssertNooutFlagUnsetOps{}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestStopOsdOpsOkay() {
+func (s *operationsSuite) TestStopOsdOpsOkay() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("PutOsds", mock.Anything, false, mock.Anything).Return(nil)
 
 	// patch ceph client
 	client.MClient = m
 
-	ops := stopOsdOps{client.MClient, nil}
+	ops := StopOsdOps{client.MClient, nil}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestStopOsdOpsFail() {
+func (s *operationsSuite) TestStopOsdOpsFail() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("PutOsds", mock.Anything, false, mock.Anything).Return(fmt.Errorf("some reasons"))
 
 	// patch ceph client
 	client.MClient = m
 
-	ops := stopOsdOps{client.MClient, nil}
+	ops := StopOsdOps{client.MClient, nil}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err, "Unable to stop OSD service in node")
 }
 
-func (s *maintenanceSuite) TestStartOsdOpsOkay() {
+func (s *operationsSuite) TestStartOsdOpsOkay() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("PutOsds", mock.Anything, true, mock.Anything).Return(nil)
 
 	// patch ceph client
 	client.MClient = m
 
-	ops := startOsdOps{client.MClient, nil}
+	ops := StartOsdOps{client.MClient, nil}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestStartOsdOpsFail() {
+func (s *operationsSuite) TestStartOsdOpsFail() {
 	m := mocks.NewClientInterface(s.T())
 	m.On("PutOsds", mock.Anything, true, mock.Anything).Return(fmt.Errorf("some reasons"))
 
 	// patch ceph client
 	client.MClient = m
 
-	ops := startOsdOps{client.MClient, nil}
+	ops := StartOsdOps{client.MClient, nil}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err, "Unable to start OSD service in node")
 }
 
-func (s *maintenanceSuite) TestUnsetNooutOpsOkay() {
+func (s *operationsSuite) TestUnSetNooutOpsOkay() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "unset", "noout").Return("ok", nil).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := unsetNooutOps{}
+	ops := UnsetNooutOps{}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
 
-func (s *maintenanceSuite) TestUnsetNooutOpsFail() {
+func (s *operationsSuite) TestUnSetNooutOpsFail() {
 	r := mocks.NewRunner(s.T())
 	r.On("RunCommand", "ceph", "osd", "unset", "noout").Return("fail", fmt.Errorf("some reasons")).Once()
 
 	// patch processExec
 	processExec = r
 
-	ops := unsetNooutOps{}
+	ops := UnsetNooutOps{}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err)
 }
