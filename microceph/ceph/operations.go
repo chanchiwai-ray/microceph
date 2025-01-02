@@ -38,7 +38,6 @@ type Operation interface {
 type ClusterOps struct {
 	CephClient    client.ClientInterface
 	ClusterClient *microCli.Client
-
 }
 
 // CheckNodeInClusterOps is an operation to check if a node is in the microceph cluster.
@@ -75,16 +74,9 @@ type CheckOsdOkToStopOps struct {
 
 // Run checks osds in a node are ok-to-stop.
 func (o *CheckOsdOkToStopOps) Run(name string) error {
-	disks, err := o.CephClient.GetDisks(o.ClusterClient)
+	OsdsToCheck, err := o.getOsds(name)
 	if err != nil {
-		return fmt.Errorf("error getting disks: %v", err)
-	}
-
-	OsdsToCheck := []int64{}
-	for _, disk := range disks {
-		if disk.Location == name {
-			OsdsToCheck = append(OsdsToCheck, disk.OSD)
-		}
+		return err
 	}
 
 	if !testSafeStop(OsdsToCheck) {
@@ -97,7 +89,23 @@ func (o *CheckOsdOkToStopOps) Run(name string) error {
 
 // DryRun prints out the action plan.
 func (o *CheckOsdOkToStopOps) DryRun(name string) string {
-	return fmt.Sprintf("Check if osds in node '%s' are ok-to-stop.", name)
+	osdsToCheck, _ := o.getOsds(name)
+	return fmt.Sprintf("Check if osds.%v in node '%s' are ok-to-stop.", osdsToCheck, name)
+}
+
+func (o *CheckOsdOkToStopOps) getOsds(name string) ([]int64, error) {
+	disks, err := o.CephClient.GetDisks(o.ClusterClient)
+	if err != nil {
+		return []int64{}, fmt.Errorf("error getting disks: %v", err)
+	}
+
+	OsdsToCheck := []int64{}
+	for _, disk := range disks {
+		if disk.Location == name {
+			OsdsToCheck = append(OsdsToCheck, disk.OSD)
+		}
+	}
+	return OsdsToCheck, nil
 }
 
 // CheckNonOsdSvcEnoughOps is an operation to check if non-osd service in a node are enough.
@@ -144,7 +152,7 @@ func (o *CheckNonOsdSvcEnoughOps) DryRun(name string) string {
 }
 
 // SetNooutOps is an operation to set noout for the ceph cluster.
-type SetNooutOps struct{
+type SetNooutOps struct {
 	ClusterOps
 }
 
@@ -163,7 +171,7 @@ func (o *SetNooutOps) DryRun(name string) string {
 }
 
 // AssertNooutFlagSetOps is an operation to assert noout has been set for the ceph cluster.
-type AssertNooutFlagSetOps struct{
+type AssertNooutFlagSetOps struct {
 	ClusterOps
 }
 
@@ -186,7 +194,7 @@ func (o *AssertNooutFlagSetOps) DryRun(name string) string {
 }
 
 // AssertNooutFlagUnsetOps is an operation to assert noout has been unset for the ceph cluster.
-type AssertNooutFlagUnsetOps struct{
+type AssertNooutFlagUnsetOps struct {
 	ClusterOps
 }
 
@@ -251,7 +259,7 @@ func (o *StartOsdOps) DryRun(name string) string {
 }
 
 // UnsetNooutOps is an operation to unset noout for the ceph cluster.
-type UnsetNooutOps struct{
+type UnsetNooutOps struct {
 	ClusterOps
 }
 
