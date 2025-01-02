@@ -32,7 +32,7 @@ func (s *operationsSuite) TestCheckNodeInClusterOpsTrue() {
 	client.MClient = m
 
 	// node microceph-0 is in the cluster
-	ops := CheckNodeInClusterOps{client.MClient, nil}
+	ops := CheckNodeInClusterOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
@@ -45,7 +45,7 @@ func (s *operationsSuite) TestCheckNodeInClusterOpsFalse() {
 	client.MClient = m
 
 	// node microceph-2 is not in the cluster
-	ops := CheckNodeInClusterOps{client.MClient, nil}
+	ops := CheckNodeInClusterOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("microceph-2")
 	assert.ErrorContains(s.T(), err, "not found")
 }
@@ -58,7 +58,7 @@ func (s *operationsSuite) TestCheckNodeInClusterOpsError() {
 	client.MClient = m
 
 	// cannot get cluster member
-	ops := CheckNodeInClusterOps{client.MClient, nil}
+	ops := CheckNodeInClusterOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("some-node-name")
 	assert.ErrorContains(s.T(), err, "error getting cluster members")
 }
@@ -87,7 +87,7 @@ func (s *operationsSuite) TestCheckOsdOkToStopOpsTrue() {
 	processExec = r
 
 	// osd.1 in microceph-0 is okay to stop
-	ops := CheckOsdOkToStopOps{client.MClient, nil}
+	ops := CheckOsdOkToStopOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
@@ -116,7 +116,7 @@ func (s *operationsSuite) TestCheckOsdOkToStopOpsFalse() {
 	processExec = r
 
 	// osd.1 in microceph-0 is not okay to stop
-	ops := CheckOsdOkToStopOps{client.MClient, nil}
+	ops := CheckOsdOkToStopOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("microceph-0")
 	assert.ErrorContains(s.T(), err, "cannot be safely stopped")
 }
@@ -129,7 +129,7 @@ func (s *operationsSuite) TestCheckOsdOkToStopOpsError() {
 	client.MClient = m
 
 	// cannot get disks
-	ops := CheckOsdOkToStopOps{client.MClient, nil}
+	ops := CheckOsdOkToStopOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("some-node-name")
 	assert.ErrorContains(s.T(), err, "error getting disks")
 }
@@ -169,7 +169,7 @@ func (s *operationsSuite) TestCheckNonOsdSvcEnoughOpsTrue() {
 	client.MClient = m
 
 	// microceph-3 go to maintenance mode -> 3 mons, 1 mds, 1 mgr -> ok
-	ops := CheckNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
+	ops := CheckNonOsdSvcEnoughOps{ClusterOps: ClusterOps{client.MClient, nil}, MinMon: 3, MinMds: 1, MinMgr: 1}
 	err := ops.Run("microceph-3")
 	assert.NoError(s.T(), err)
 }
@@ -209,7 +209,7 @@ func (s *operationsSuite) TestCheckNonOsdSvcEnoughOpsFalse() {
 	client.MClient = m
 
 	// microceph-0 go to maintenance mode -> 3 mons, 0 mds, 0 mgr -> no ok
-	ops := CheckNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
+	ops := CheckNonOsdSvcEnoughOps{ClusterOps: ClusterOps{client.MClient, nil}, MinMon: 3, MinMds: 1, MinMgr: 1}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err)
 }
@@ -222,7 +222,7 @@ func (s *operationsSuite) TestCheckNonOsdSvcEnoughOpsError() {
 	client.MClient = m
 
 	// cannot get services
-	ops := CheckNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
+	ops := CheckNonOsdSvcEnoughOps{ClusterOps: ClusterOps{client.MClient, nil}, MinMon: 3, MinMds: 1, MinMgr: 1}
 	err := ops.Run("some-node-name")
 	assert.ErrorContains(s.T(), err, "error getting services")
 }
@@ -330,7 +330,7 @@ func (s *operationsSuite) TestStopOsdOpsOkay() {
 	// patch ceph client
 	client.MClient = m
 
-	ops := StopOsdOps{client.MClient, nil}
+	ops := StopOsdOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
@@ -342,7 +342,7 @@ func (s *operationsSuite) TestStopOsdOpsFail() {
 	// patch ceph client
 	client.MClient = m
 
-	ops := StopOsdOps{client.MClient, nil}
+	ops := StopOsdOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err, "Unable to stop OSD service in node")
 }
@@ -354,7 +354,7 @@ func (s *operationsSuite) TestStartOsdOpsOkay() {
 	// patch ceph client
 	client.MClient = m
 
-	ops := StartOsdOps{client.MClient, nil}
+	ops := StartOsdOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("microceph-0")
 	assert.NoError(s.T(), err)
 }
@@ -366,7 +366,7 @@ func (s *operationsSuite) TestStartOsdOpsFail() {
 	// patch ceph client
 	client.MClient = m
 
-	ops := StartOsdOps{client.MClient, nil}
+	ops := StartOsdOps{ClusterOps: ClusterOps{client.MClient, nil}}
 	err := ops.Run("microceph-0")
 	assert.Error(s.T(), err, "Unable to start OSD service in node")
 }
