@@ -44,14 +44,14 @@ func (c *cmdClusterMaintenanceExit) Run(cmd *cobra.Command, args []string) error
 
 	name := args[0]
 	operations := []ceph.Operation{
-		&ceph.CheckNodeInClusterOps{client.MClient, cli},
+		&ceph.CheckNodeInClusterOps{CephClient: client.MClient, ClusterClient: cli},
 	}
 
 	// idempotently unset noout and start osd service
 	operations = append(operations, []ceph.Operation{
 		&ceph.UnsetNooutOps{},
 		&ceph.AssertNooutFlagUnsetOps{},
-		&ceph.StartOsdOps{client.MClient, cli},
+		&ceph.StartOsdOps{CephClient: client.MClient, ClusterClient: cli},
 	}...)
 
 	err = ceph.RunOperations(name, operations, c.flagDryRun)

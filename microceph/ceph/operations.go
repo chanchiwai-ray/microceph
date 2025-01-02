@@ -26,7 +26,6 @@ func RunOperations(name string, operations []Operation, dryRun bool) error {
 }
 
 // Operation is a interface for ceph and microceph operations.
-//
 type Operation interface {
 	// Run executes the operation and return the error if any.
 	Run(string) error
@@ -45,17 +44,17 @@ type CheckNodeInClusterOps struct {
 func (o *CheckNodeInClusterOps) Run(name string) error {
 	clusterMembers, err := o.CephClient.GetClusterMembers(o.ClusterClient)
 	if err != nil {
-		return fmt.Errorf("Error getting cluster members: %v", err)
+		return fmt.Errorf("error getting cluster members: %v", err)
 	}
 
 	for _, member := range clusterMembers {
 		if member == name {
-			logger.Infof("Node '%s' is in the cluster.", name)
+			logger.Infof("node '%s' is in the cluster.", name)
 			return nil
 		}
 	}
 
-	return fmt.Errorf("Node '%s' not found", name)
+	return fmt.Errorf("node '%s' not found", name)
 }
 
 // DryRun prints out the action plan.
@@ -73,7 +72,7 @@ type CheckOsdOkToStopOps struct {
 func (o *CheckOsdOkToStopOps) Run(name string) error {
 	disks, err := o.CephClient.GetDisks(o.ClusterClient)
 	if err != nil {
-		return fmt.Errorf("Error getting disks: %v", err)
+		return fmt.Errorf("error getting disks: %v", err)
 	}
 
 	OsdsToCheck := []int64{}
@@ -110,7 +109,7 @@ type CheckNonOsdSvcEnoughOps struct {
 func (o *CheckNonOsdSvcEnoughOps) Run(name string) error {
 	services, err := o.CephClient.GetServices(o.ClusterClient)
 	if err != nil {
-		return fmt.Errorf("Error getting services: %v", err)
+		return fmt.Errorf("error getting services: %v", err)
 	}
 
 	remains := map[string]int{
@@ -128,9 +127,9 @@ func (o *CheckNonOsdSvcEnoughOps) Run(name string) error {
 	// the remaining services must be sufficient to make the cluster healthy after the node enters
 	// maintanence mode.
 	if remains["mon"] < o.MinMon || remains["mds"] < o.MinMds || remains["mgr"] < o.MinMgr {
-		return fmt.Errorf("Need at least %d mon, %d mds, and %d mgr services in the cluster besides those in node '%s'", o.MinMon, o.MinMds, o.MinMgr, name)
+		return fmt.Errorf("need at least %d mon, %d mds, and %d mgr services in the cluster besides those in node '%s'", o.MinMon, o.MinMds, o.MinMgr, name)
 	}
-	logger.Infof("Remaining mon (%d), mds (%d), and mgr (%d) services in the cluster are enough after '%s' enters maintenance mode", remains["mon"], remains["mds"], remains["mgr"], name)
+	logger.Infof("remaining mon (%d), mds (%d), and mgr (%d) services in the cluster are enough after '%s' enters maintenance mode", remains["mon"], remains["mds"], remains["mgr"], name)
 
 	return nil
 }
@@ -154,7 +153,7 @@ func (o *SetNooutOps) Run(name string) error {
 
 // DryRun prints out the action plan.
 func (o *SetNooutOps) DryRun(name string) string {
-	return fmt.Sprint("Run `ceph osd set noout`.")
+	return "Run `ceph osd set noout`."
 }
 
 // AssertNooutFlagSetOps is an operation to assert noout has been set for the ceph cluster.
@@ -167,15 +166,15 @@ func (o *AssertNooutFlagSetOps) Run(name string) error {
 		return err
 	}
 	if !set {
-		return fmt.Errorf("OSD has 'noout' flag unset.")
+		return fmt.Errorf("osd has 'noout' flag unset.")
 	}
-	logger.Info("OSD has 'noout' flag set.")
+	logger.Info("osd has 'noout' flag set.")
 	return nil
 }
 
 // DryRun prints out the action plan.
 func (o *AssertNooutFlagSetOps) DryRun(name string) string {
-	return fmt.Sprint("Assert OSD has 'noout' flag set.")
+	return "Assert osd has 'noout' flag set."
 }
 
 // AssertNooutFlagUnsetOps is an operation to assert noout has been unset for the ceph cluster.
@@ -188,15 +187,15 @@ func (o *AssertNooutFlagUnsetOps) Run(name string) error {
 		return err
 	}
 	if set {
-		return fmt.Errorf("OSD has 'noout' flag set.")
+		return fmt.Errorf("osd has 'noout' flag set.")
 	}
-	logger.Info("OSD has 'noout' flag unset.")
+	logger.Info("osd has 'noout' flag unset.")
 	return nil
 }
 
 // DryRun prints out the action plan.
 func (o *AssertNooutFlagUnsetOps) DryRun(name string) string {
-	return fmt.Sprint("Assert OSD has 'noout' flag unset.")
+	return "Assert osd has 'noout' flag unset."
 }
 
 // StopOsdOps is an operation to stop osd service for a node.
@@ -209,16 +208,16 @@ type StopOsdOps struct {
 func (o *StopOsdOps) Run(name string) error {
 	err := o.CephClient.PutOsds(o.ClusterClient, false, name)
 	if err != nil {
-		logger.Errorf("Unable to stop OSD service in node '%s'.", name)
+		logger.Errorf("unable to stop osd service in node '%s': %v", name, err)
 		return err
 	}
-	logger.Infof("Stopped OSD service in node '%s'.", name)
+	logger.Infof("stopped osd service in node '%s'.", name)
 	return nil
 }
 
 // DryRun prints out the action plan.
 func (o *StopOsdOps) DryRun(name string) string {
-	return fmt.Sprintf("Stop OSD service in node '%s'.", name)
+	return fmt.Sprintf("Stop osd service in node '%s'.", name)
 }
 
 // StartOsdOps is an operation to start osd service for a node.
@@ -231,16 +230,16 @@ type StartOsdOps struct {
 func (o *StartOsdOps) Run(name string) error {
 	err := o.CephClient.PutOsds(o.ClusterClient, true, name)
 	if err != nil {
-		logger.Errorf("Unable to start OSD service in node '%s'.", name)
+		logger.Errorf("unable to start osd service in node '%s': %v", name, err)
 		return err
 	}
-	logger.Infof("Started OSD service in node '%s'", name)
+	logger.Infof("started osd service in node '%s'", name)
 	return nil
 }
 
 // DryRun prints out the action plan.
 func (o *StartOsdOps) DryRun(name string) string {
-	return fmt.Sprintf("Start osd services in node '%s'.", name)
+	return fmt.Sprintf("Start osd service in node '%s'.", name)
 }
 
 // UnsetNooutOps is an operation to unset noout for the ceph cluster.
@@ -252,11 +251,11 @@ func (o *UnsetNooutOps) Run(name string) error {
 	if err != nil {
 		return err
 	}
-	logger.Info("Unset osd noout.")
+	logger.Info("unset osd noout.")
 	return nil
 }
 
 // DryRun prints out the action plan.
 func (o *UnsetNooutOps) DryRun(name string) string {
-	return fmt.Sprint("Run `ceph osd unset noout`.")
+	return "Run `ceph osd unset noout`."
 }

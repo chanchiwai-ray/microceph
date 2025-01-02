@@ -966,8 +966,8 @@ func setOsdNooutFlag(set bool) error {
 
 	_, err := processExec.RunCommand("ceph", "osd", command, "noout")
 	if err != nil {
-		logger.Errorf("Failed to %s noout flag: %v", command, err)
-		return fmt.Errorf("Failed to %s noout flag: %w", command, err)
+		logger.Errorf("failed to %s noout flag: %v", command, err)
+		return fmt.Errorf("failed to %s noout flag: %w", command, err)
 	}
 	return nil
 }
@@ -975,10 +975,10 @@ func setOsdNooutFlag(set bool) error {
 func isOsdNooutSet() (bool, error) {
 	output, err := processExec.RunCommand("ceph", "osd", "dump")
 	if err != nil {
-		logger.Errorf("Failed to dump osd info: %v", err)
-		return false, fmt.Errorf("Failed to dump osd info: %w", err)
+		logger.Errorf("failed to dump osd info: %v", err)
+		return false, fmt.Errorf("failed to dump osd info: %w", err)
 	}
-	logger.Infof("OSD dump: %s", output)
+	logger.Infof("osd dump: %s", output)
 	return strings.Contains(output, "noout"), nil
 }
 
@@ -1244,7 +1244,7 @@ func SetOsdState(up bool) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("Failed to change the state of OSD service: %w", err)
+		return fmt.Errorf("failed to change the state of osd service: %w", err)
 	}
 	return nil
 }

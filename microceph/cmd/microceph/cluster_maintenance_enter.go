@@ -49,14 +49,14 @@ func (c *cmdClusterMaintenanceEnter) Run(cmd *cobra.Command, args []string) erro
 
 	name := args[0]
 	operations := []ceph.Operation{
-		&ceph.CheckNodeInClusterOps{client.MClient, cli},
+		&ceph.CheckNodeInClusterOps{CephClient: client.MClient, ClusterClient: cli},
 	}
 
 	// pre-flight checks
 	if !c.flagForce {
 		operations = append(operations, []ceph.Operation{
-			&ceph.CheckOsdOkToStopOps{client.MClient, cli},
-			&ceph.CheckNonOsdSvcEnoughOps{client.MClient, cli, 3, 1, 1},
+			&ceph.CheckOsdOkToStopOps{CephClient: client.MClient, ClusterClient: cli},
+			&ceph.CheckNonOsdSvcEnoughOps{CephClient: client.MClient, ClusterClient: cli, MinMon: 3, MinMds: 1, MinMgr: 1},
 		}...)
 	}
 
@@ -71,7 +71,7 @@ func (c *cmdClusterMaintenanceEnter) Run(cmd *cobra.Command, args []string) erro
 	// optionally stop osd service
 	if c.flagStopOsds {
 		operations = append(operations, []ceph.Operation{
-			&ceph.StopOsdOps{client.MClient, cli},
+			&ceph.StopOsdOps{CephClient: client.MClient, ClusterClient: cli},
 		}...)
 	}
 

@@ -60,7 +60,7 @@ func (s *operationsSuite) TestCheckNodeInClusterOpsError() {
 	// cannot get cluster member
 	ops := CheckNodeInClusterOps{client.MClient, nil}
 	err := ops.Run("some-node-name")
-	assert.ErrorContains(s.T(), err, "Error getting cluster members")
+	assert.ErrorContains(s.T(), err, "error getting cluster members")
 }
 
 func (s *operationsSuite) TestCheckOsdOkToStopOpsTrue() {
@@ -131,7 +131,7 @@ func (s *operationsSuite) TestCheckOsdOkToStopOpsError() {
 	// cannot get disks
 	ops := CheckOsdOkToStopOps{client.MClient, nil}
 	err := ops.Run("some-node-name")
-	assert.ErrorContains(s.T(), err, "Error getting disks")
+	assert.ErrorContains(s.T(), err, "error getting disks")
 }
 
 func (s *operationsSuite) TestCheckNonOsdSvcEnoughOpsTrue() {
@@ -224,7 +224,7 @@ func (s *operationsSuite) TestCheckNonOsdSvcEnoughOpsError() {
 	// cannot get services
 	ops := CheckNonOsdSvcEnoughOps{client.MClient, nil, 3, 1, 1}
 	err := ops.Run("some-node-name")
-	assert.ErrorContains(s.T(), err, "Error getting services")
+	assert.ErrorContains(s.T(), err, "error getting services")
 }
 
 func (s *operationsSuite) TestSetNooutOpsOkay() {

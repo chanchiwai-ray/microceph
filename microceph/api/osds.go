@@ -27,7 +27,7 @@ func cmdOsdPut(s state.State, r *http.Request) response.Response {
 
 	err := json.NewDecoder(r.Body).Decode(&osdPut)
 	if err != nil {
-		logger.Errorf("Failed decoding body: %v", err)
+		logger.Errorf("failed decoding body: %v", err)
 		return response.InternalError(err)
 	}
 
@@ -43,7 +43,7 @@ func cmdOsdPut(s state.State, r *http.Request) response.Response {
 
 	if err != nil {
 		url := s.Address().String()
-		logger.Errorf("Failed update the state of osd service on host %s", url)
+		logger.Errorf("failed updating the state of osd service on host %s: %v", url, err)
 		return response.SyncResponse(false, err)
 	}
 
