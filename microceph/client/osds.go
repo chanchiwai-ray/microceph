@@ -22,9 +22,9 @@ func PutOsds(ctx context.Context, c *client.Client, up bool, target string) erro
 
 	switch up {
 	case true:
-		data = types.OsdPut{State: "up", Location: target}
+		data = types.OsdPut{State: "up"}
 	case false:
-		data = types.OsdPut{State: "down", Location: target}
+		data = types.OsdPut{State: "down"}
 	}
 
 	c = c.UseTarget(target)
