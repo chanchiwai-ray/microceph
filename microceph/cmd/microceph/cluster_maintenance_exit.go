@@ -55,9 +55,9 @@ func (c *cmdClusterMaintenanceExit) Run(cmd *cobra.Command, args []string) error
 		&ceph.StartOsdOps{ClusterOps: clusterOps},
 	}...)
 
-	err = ceph.RunOperations(name, operations, c.flagDryRun)
+	err = ceph.RunOperations(name, operations, c.flagDryRun, false)
 	if err != nil {
-		return fmt.Errorf("Failed to exit maintenance mode: %v", err)
+		return fmt.Errorf("failed to exit maintenance mode: %v", err)
 	}
 
 	return nil

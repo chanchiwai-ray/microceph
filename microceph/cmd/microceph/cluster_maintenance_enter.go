@@ -51,14 +51,8 @@ func (c *cmdClusterMaintenanceEnter) Run(cmd *cobra.Command, args []string) erro
 	clusterOps := ceph.ClusterOps{CephClient: client.MClient, ClusterClient: cli}
 	operations := []ceph.Operation{
 		&ceph.CheckNodeInClusterOps{ClusterOps: clusterOps},
-	}
-
-	// pre-flight checks
-	if !c.flagForce {
-		operations = append(operations, []ceph.Operation{
-			&ceph.CheckOsdOkToStopOps{ClusterOps: clusterOps},
-			&ceph.CheckNonOsdSvcEnoughOps{ClusterOps: clusterOps, MinMon: 3, MinMds: 1, MinMgr: 1},
-		}...)
+		&ceph.CheckOsdOkToStopOps{ClusterOps: clusterOps},
+		&ceph.CheckNonOsdSvcEnoughOps{ClusterOps: clusterOps, MinMon: 3, MinMds: 1, MinMgr: 1},
 	}
 
 	// optionally set noout
@@ -76,9 +70,9 @@ func (c *cmdClusterMaintenanceEnter) Run(cmd *cobra.Command, args []string) erro
 		}...)
 	}
 
-	err = ceph.RunOperations(name, operations, c.flagDryRun)
+	err = ceph.RunOperations(name, operations, c.flagDryRun, c.flagForce)
 	if err != nil {
-		return fmt.Errorf("Failed to enter maintenance mode: %v", err)
+		return fmt.Errorf("failed to enter maintenance mode: %v", err)
 	}
 
 	return nil

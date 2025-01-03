@@ -11,13 +11,18 @@ import (
 )
 
 // RunOperations runs the provided operations or prints out the action plan.
-func RunOperations(name string, operations []Operation, dryRun bool) error {
+func RunOperations(name string, operations []Operation, dryRun, force bool) error {
 	for _, ops := range operations {
 		if dryRun {
 			fmt.Println(ops.DryRun(name))
 		} else {
 			err := ops.Run(name)
 			if err != nil {
+				logger.Errorf("%v", err)
+				// Skip the error if forced
+				if force {
+					return nil
+				}
 				return err
 			}
 		}
