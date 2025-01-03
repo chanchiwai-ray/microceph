@@ -110,6 +110,16 @@ function enable_rgw() {
     wait_for_rgw 1
 }
 
+function enable_mon() {
+    set -x
+    sudo microceph enable mon
+}
+
+function enable_mon() {
+    set -x
+    sudo microceph enable mon
+}
+
 function enable_rgw_ssl() {
     set -x
     # Generate the SSL material
@@ -146,7 +156,7 @@ function create_containers() {
         lxc config set $container security.privileged true
         lxc config set $container security.nesting true
         # Allow access to loopback devices
-        printf 'lxc.cgroup2.devices.allow = b 7:* rwm\nlxc.cgroup2.devices.allow = c 10:237 rwm' | lxc config set $container raw.lxc - 
+        printf 'lxc.cgroup2.devices.allow = b 7:* rwm\nlxc.cgroup2.devices.allow = c 10:237 rwm' | lxc config set $container raw.lxc -
 
         # Configure and start container
         lxc config device add $container homedir disk source=${HOME} path=/mnt
@@ -181,7 +191,7 @@ function remote_simple_bootstrap_two_sites() {
     tok=$(lxc exec node-wrk0 -- sh -c "microceph cluster add node-wrk1" )
     lxc exec node-wrk1 -- sh -c "microceph cluster join $tok"
     sleep 10
-    # Bootstrap siteb 
+    # Bootstrap siteb
     lxc exec node-wrk2 -- sh -c "microceph cluster bootstrap"
     lxc exec node-wrk2 -- sh -c "microceph disk add loop,2G,3"
     tok=$(lxc exec node-wrk2 -- sh -c "microceph cluster add node-wrk3" )
@@ -639,7 +649,7 @@ function wait_for_osds() {
     if [[ $res -lt $expect ]] ; then
         echo "Never reached ${expect} OSDs"
         return -1
-    fi    
+    fi
 }
 
 function wait_for_rgw() {
@@ -784,12 +794,12 @@ EOF
 }
 
 # nodeexec <node name> <run>
-function node_exec() {
+function nodeexec() {
     local node="${1?missing}"
     local run="${2?missing}"
-    shift
+    shift 2
     set -x
-    lxc exec node-wrk0 -- sh -c "/mnt/actionutils.sh $run $@"
+    lxc exec $node -- sh -c "/mnt/actionutils.sh $run $@"
 }
 
 function headexec() {
@@ -822,6 +832,126 @@ function bombard_rgw_configs() {
     sleep 30
     sudo microceph.ceph status
     sudo microceph.ceph health
+}
+
+
+# Check if the cluster has osd noout flag set.
+# Usage: is_osd_noout_set
+function is_osd_noout_set() {
+    set -xe
+
+    microceph.ceph osd dump | grep noout > /dev/null 2>&1
+}
+
+# Check if the snap service is active and enabled
+# Usage: check_snap_service_active_enabled <microceph service name>
+function check_snap_service_active_enabled() {
+    local service="${1?missing}"
+
+    set -xe
+
+    snap services microceph.$service | grep active > /dev/null 2>&1
+    snap services microceph.$service | grep enabled > /dev/null 2>&1
+}
+
+# Test dry run `microceph cluster maintenance enter` prints expected number of steps.
+# Usage: test_dry_run_maintenance_enter <node name>
+function test_dry_run_maintenance_enter() {
+    local node="${1?missing}"
+
+    set -xe
+
+    # Debug
+    nodeexec $node "microceph.ceph -s"
+
+    # Count expected steps when --set-noout=false --stop-osds=false
+    lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=false --stop-osds=false --dry-run | tee output.txt | wc -l")
+    nodeexec $node "cat output.txt"
+    if [ $lines != "3" ]; then exit 1; fi
+
+    # Count expected steps when --set-noout=false --stop-osds=true
+    lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=false --stop-osds=true --dry-run | tee output.txt | wc -l")
+    nodeexec $node "cat output.txt"
+    if [ $lines != "4" ]; then exit 1; fi
+
+    # Count expected steps when --set-noout=true --stop-osds=false
+    lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=true --stop-osds=false --dry-run | tee output.txt | wc -l")
+    nodeexec $node "cat output.txt"
+    if [ $lines != "5" ]; then exit 1; fi
+
+    # Count expected steps when --set-noout=true --stop-osds=true
+    lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=true --stop-osds=true --dry-run | tee output.txt | wc -l")
+    nodeexec $node "cat output.txt"
+    if [ $lines != "6" ]; then exit 1; fi
+}
+
+# Test dry run `microceph cluster maintenance exit` prints expected number of steps.
+# Usage: test_dry_run_maintenance_exit <node name>
+function test_dry_run_maintenance_exit() {
+    local node="${1?missing}"
+
+    set -xe
+
+    # Debug
+    nodeexec $node "microceph.ceph -s"
+
+    # Count expected steps
+    lines=$(nodeexec $node "microceph cluster maintenance exit $node --dry-run | tee output.txt | wc -l")
+    if [ $lines != "4" ]; then exit 1; fi
+}
+
+# Test `microceph cluster maintenance enter --set-noout=false --stop-osds=false` and then `microceph cluster maintenance exit`.
+# Usage: test_maintenance_enter <node name>
+function test_maintenance_enter_and_exit() {
+    local node="${1?missing}"
+
+    set -xe
+
+    # Debug
+    nodeexec $node "microceph.ceph -s"
+
+    # Enter idempotently
+    for i in $(seq 1 3); do
+        echo "Enter counts: $i"
+        nodeexec $node "microceph cluster maintenance enter --set-noout=false --stop-osds=false $node"
+        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
+        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is still active and enabled
+    done
+
+    # Exit idempotently
+    for i in $(seq 1 3); do
+        echo "Exit counts: $i"
+        nodeexec $node "microceph cluster maintenance exit $node"
+        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
+        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
+    done
+}
+
+# Test `microceph cluster maintenance enter --set-noout=true --stop-osds=true` and then `microceph cluster maintenance exit`.
+# Usage: test_maintenance_enter_set_noout_stop_osds_and_exit <node name>
+function test_maintenance_enter_set_noout_stop_osds_and_exit() {
+    local node="${1?missing}"
+
+    set -xe
+
+    # Debug
+    nodeexec $node "microceph.ceph -s"
+
+    # Enter idempotently
+    for i in $(seq 1 3); do
+        echo "Enter counts: $i"
+        nodeexec $node "microceph cluster maintenance enter --set-noout=true --stop-osds=true $node"
+        nodeexec $node is_osd_noout_set  # assert noout is set
+        [ ! $(nodeexec $node check_snap_service_active_enabled osd) ]  # assert osd service is not active and not enabled
+    done
+
+    # Exit idempotently
+    for i in $(seq 1 3); do
+        echo "Exit counts: $i"
+        nodeexec $node "microceph cluster maintenance exit $node"
+        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
+        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
+    done
 }
 
 run="${1}"
