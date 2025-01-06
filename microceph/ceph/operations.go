@@ -21,7 +21,7 @@ func RunOperations(name string, operations []Operation, dryRun, force bool) erro
 				logger.Errorf("%v", err)
 				// Skip the error if forced
 				if force {
-					return nil
+					continue
 				}
 				return err
 			}
