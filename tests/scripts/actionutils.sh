@@ -934,6 +934,7 @@ function test_maintenance_enter_and_exit() {
     for i in $(seq 1 3); do
         echo "Enter counts: $i"
         nodeexec $node "microceph cluster maintenance enter --set-noout=false --stop-osds=false $node"
+        sleep 1
         [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
         nodeexec $node check_snap_service_active_enabled osd  # assert osd service is still active and enabled
     done
@@ -942,6 +943,7 @@ function test_maintenance_enter_and_exit() {
     for i in $(seq 1 3); do
         echo "Exit counts: $i"
         nodeexec $node "microceph cluster maintenance exit $node"
+        sleep 1
         [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
         nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
     done
@@ -962,6 +964,7 @@ function test_maintenance_enter_set_noout_stop_osds_and_exit() {
     for i in $(seq 1 3); do
         echo "Enter counts: $i"
         nodeexec $node "microceph cluster maintenance enter --set-noout=true --stop-osds=true $node"
+        sleep 1
         nodeexec $node is_osd_noout_set  # assert noout is set
         [ ! $(nodeexec $node check_snap_service_active_enabled osd) ]  # assert osd service is not active and not enabled
     done
@@ -970,6 +973,7 @@ function test_maintenance_enter_set_noout_stop_osds_and_exit() {
     for i in $(seq 1 3); do
         echo "Exit counts: $i"
         nodeexec $node "microceph cluster maintenance exit $node"
+        sleep 1
         [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
         nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
     done
@@ -990,6 +994,7 @@ function test_maintenance_enter_and_exit_force() {
     for i in $(seq 1 3); do
         echo "Enter counts: $i"
         nodeexec $node "microceph cluster maintenance enter --set-noout=false --stop-osds=false --force $node"
+        sleep 1
         [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
         nodeexec $node check_snap_service_active_enabled osd  # assert osd service is still active and enabled
     done
@@ -998,6 +1003,7 @@ function test_maintenance_enter_and_exit_force() {
     for i in $(seq 1 3); do
         echo "Exit counts: $i"
         nodeexec $node "microceph cluster maintenance exit $node"
+        sleep 1
         [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
         nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
     done
@@ -1018,6 +1024,7 @@ function test_maintenance_enter_set_noout_stop_osds_and_exit_force() {
     for i in $(seq 1 3); do
         echo "Enter counts: $i"
         nodeexec $node "microceph cluster maintenance enter --set-noout=true --stop-osds=true --force $node"
+        sleep 1
         nodeexec $node is_osd_noout_set  # assert noout is set
         [ ! $(nodeexec $node check_snap_service_active_enabled osd) ]  # assert osd service is not active and not enabled
     done
@@ -1026,6 +1033,7 @@ function test_maintenance_enter_set_noout_stop_osds_and_exit_force() {
     for i in $(seq 1 3); do
         echo "Exit counts: $i"
         nodeexec $node "microceph cluster maintenance exit $node"
+        sleep 1
         [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
         nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
     done
