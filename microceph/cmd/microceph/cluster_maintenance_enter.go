@@ -20,7 +20,7 @@ type cmdClusterMaintenanceEnter struct {
 
 func (c *cmdClusterMaintenanceEnter) Command() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "enter <NAME>",
+		Use:   "enter <NODE_NAME>",
 		Short: "Enter maintenance mode.",
 		RunE:  c.Run,
 	}

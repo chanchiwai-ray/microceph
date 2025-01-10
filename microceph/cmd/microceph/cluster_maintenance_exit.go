@@ -17,7 +17,7 @@ type cmdClusterMaintenanceExit struct {
 
 func (c *cmdClusterMaintenanceExit) Command() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "exit <NAME>",
+		Use:   "exit <NODE_NAME>",
 		Short: "Exit maintenance mode.",
 		RunE:  c.Run,
 	}
