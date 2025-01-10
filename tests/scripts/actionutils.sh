@@ -115,11 +115,6 @@ function enable_mon() {
     sudo microceph enable mon
 }
 
-function enable_mon() {
-    set -x
-    sudo microceph enable mon
-}
-
 function enable_rgw_ssl() {
     set -x
     # Generate the SSL material
@@ -385,7 +380,7 @@ function remote_remove_and_verify() {
 
     match=$(echo $remotes | grep -c '\"name\":\"siteb\"')
     if [[ $match -ne 1 ]] ; then
-        echo "Expected remote record for siteb absent."
+        echo "Expect remote record for siteb absent."
         lxc exec node-wrk0 -- sh -c "microceph remote list --json"
         exit -1
     fi
@@ -455,7 +450,7 @@ function upgrade_multinode() {
         done
         res=$( ( lxc exec $container -- sh -c "microceph.ceph osd status" | fgrep -c "exists,up" ) )
         if [[ $res -ne $expect ]] ; then
-            echo "Expected $expect OSD up, got $res"
+            echo "Expect $expect OSD up, got $res"
             lxc exec $container -- sh -c "microceph.ceph -s"
             exit -1
         fi
@@ -885,22 +880,36 @@ function test_dry_run_maintenance_enter() {
     # Count expected steps when --set-noout=false --stop-osds=false
     lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=false --stop-osds=false --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "3" ]; then exit 1; fi
+    if [ $lines != "3" ]; then
+        echo "Expect 3 steps in the action plan."
+        exit 1;
+    fi
 
     # Count expected steps when --set-noout=false --stop-osds=true
     lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=false --stop-osds=true --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "4" ]; then exit 1; fi
+    if [ $lines != "4" ]; then
+        echo "Expect 4 steps in the action plan."
+        exit 1;
+    fi
 
     # Count expected steps when --set-noout=true --stop-osds=false
     lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=true --stop-osds=false --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "5" ]; then exit 1; fi
+    if [ $lines != "5" ]; then
+        echo "Expect 5 steps in the action plan."
+        exit 1;
+    fi
 
     # Count expected steps when --set-noout=true --stop-osds=true
     lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=true --stop-osds=true --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "6" ]; then exit 1; fi
+    if [ $lines != "6" ]; then
+        echo "Expect 6 steps in the action plan."
+        exit 1;
+    fi
+
+    echo "Passed: test dry running maintenance enter."
 }
 
 # Test dry run `microceph cluster maintenance exit` prints expected number of steps.
@@ -916,7 +925,13 @@ function test_dry_run_maintenance_exit() {
 
     # Count expected steps
     lines=$(nodeexec $node "microceph cluster maintenance exit $node --dry-run | tee output.txt | wc -l")
-    if [ $lines != "4" ]; then exit 1; fi
+    nodeexec $node "cat output.txt"
+    if [ $lines != "4" ]; then
+        echo "Expect 4 steps in the action plan."
+        exit 1;
+    fi
+
+    echo "Passed: test dry running maintenance exit."
 }
 
 # Test `microceph cluster maintenance enter --set-noout=false --stop-osds=false` and then `microceph cluster maintenance exit`.
@@ -935,8 +950,14 @@ function test_maintenance_enter_and_exit() {
         nodeexec $node "microceph cluster maintenance enter --set-noout=false --stop-osds=false $node"
         sleep 5
         nodeexec $node "microceph.ceph -s"
-        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
-        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is still active and enabled
+        if nodeexec $node is_osd_noout_set ; then
+            echo "Expect osd noout is unset but it's set now."
+            exit 1
+        fi
+        if ! nodeexec $node check_snap_service_active_enabled osd ; then
+            echo "Expect osd service is active and enabled but it's not."
+            exit 1
+        fi
     done
 
     # Exit idempotently
@@ -945,9 +966,17 @@ function test_maintenance_enter_and_exit() {
         nodeexec $node "microceph cluster maintenance exit $node"
         sleep 5
         nodeexec $node "microceph.ceph -s"
-        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
-        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
+        if nodeexec $node is_osd_noout_set ; then
+            echo "Expect osd noout is unset but it's set now."
+            exit 1
+        fi
+        if ! nodeexec $node check_snap_service_active_enabled osd ; then
+            echo "Expect osd service is active and enabled but it's not."
+            exit 1
+        fi
     done
+
+    echo "Passed: test running maintenance enter and exit with --set-noout=false --stop-osds=false."
 }
 
 # Test `microceph cluster maintenance enter --set-noout=true --stop-osds=true` and then `microceph cluster maintenance exit`.
@@ -966,8 +995,14 @@ function test_maintenance_enter_set_noout_stop_osds_and_exit() {
         nodeexec $node "microceph cluster maintenance enter --set-noout=true --stop-osds=true $node"
         sleep 5
         nodeexec $node "microceph.ceph -s"
-        nodeexec $node is_osd_noout_set  # assert noout is set
-        [ ! $(nodeexec $node check_snap_service_active_enabled osd) ]  # assert osd service is not active and not enabled
+        if ! nodeexec $node is_osd_noout_set ; then
+            echo "Expect osd noout is set but it's unset now."
+            exit 1
+        fi
+        if nodeexec $node check_snap_service_active_enabled osd ; then
+            echo "Expect osd service is not active and not enabled but it's not."
+            exit 1
+        fi
     done
 
     # Exit idempotently
@@ -976,9 +1011,17 @@ function test_maintenance_enter_set_noout_stop_osds_and_exit() {
         nodeexec $node "microceph cluster maintenance exit $node"
         sleep 5
         nodeexec $node "microceph.ceph -s"
-        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
-        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
+        if nodeexec $node is_osd_noout_set ; then
+            echo "Expect osd noout is unset but it's set now."
+            exit 1
+        fi
+        if ! nodeexec $node check_snap_service_active_enabled osd ; then
+            echo "Expect osd service is active and enabled but it's not."
+            exit 1
+        fi
     done
+
+    echo "Passed: test running maintenance enter and exit with --set-noout=true --stop-osds=true."
 }
 
 # Test `microceph cluster maintenance enter --set-noout=false --stop-osds=false --force` and then `microceph cluster maintenance exit` succeeds.
@@ -997,8 +1040,14 @@ function test_maintenance_enter_and_exit_force() {
         nodeexec $node "microceph cluster maintenance enter --set-noout=false --stop-osds=false --force $node"
         sleep 5
         nodeexec $node "microceph.ceph -s"
-        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
-        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is still active and enabled
+        if nodeexec $node is_osd_noout_set ; then
+            echo "Expect osd noout is unset but it's set now."
+            exit 1
+        fi
+        if ! nodeexec $node check_snap_service_active_enabled osd ; then
+            echo "Expect osd service is active and enabled but it's not."
+            exit 1
+        fi
     done
 
     # Exit idempotently
@@ -1007,9 +1056,17 @@ function test_maintenance_enter_and_exit_force() {
         nodeexec $node "microceph cluster maintenance exit $node"
         sleep 5
         nodeexec $node "microceph.ceph -s"
-        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
-        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
+        if nodeexec $node is_osd_noout_set ; then
+            echo "Expect osd noout is unset but it's set now."
+            exit 1
+        fi
+        if ! nodeexec $node check_snap_service_active_enabled osd ; then
+            echo "Expect osd service is active and enabled but it's not."
+            exit 1
+        fi
     done
+
+    echo "Passed: test running maintenance enter and exit with --set-noout=false --stop-osds=false --force."
 }
 
 # Test `microceph cluster maintenance enter --set-noout=true --stop-osds=true --force` and then `microceph cluster maintenance exit` succeeds.
@@ -1028,8 +1085,14 @@ function test_maintenance_enter_set_noout_stop_osds_and_exit_force() {
         nodeexec $node "microceph cluster maintenance enter --set-noout=true --stop-osds=true --force $node"
         sleep 5
         nodeexec $node "microceph.ceph -s"
-        nodeexec $node is_osd_noout_set  # assert noout is set
-        [ ! $(nodeexec $node check_snap_service_active_enabled osd) ]  # assert osd service is not active and not enabled
+        if ! nodeexec $node is_osd_noout_set ; then
+            echo "Expect osd noout is set but it's unset now."
+            exit 1
+        fi
+        if nodeexec $node check_snap_service_active_enabled osd ; then
+            echo "Expect osd service is not active and not enabled but it's not."
+            exit 1
+        fi
     done
 
     # Exit idempotently
@@ -1038,9 +1101,17 @@ function test_maintenance_enter_set_noout_stop_osds_and_exit_force() {
         nodeexec $node "microceph cluster maintenance exit $node"
         sleep 5
         nodeexec $node "microceph.ceph -s"
-        [ ! $(nodeexec $node is_osd_noout_set) ]  # assert noout is unset
-        nodeexec $node check_snap_service_active_enabled osd  # assert osd service is active and enabled
+        if nodeexec $node is_osd_noout_set ; then
+            echo "Expect osd noout is unset but it's set now."
+            exit 1
+        fi
+        if ! nodeexec $node check_snap_service_active_enabled osd ; then
+            echo "Expect osd service is active and enabled but it's not."
+            exit 1
+        fi
     done
+
+    echo "Passed: test running maintenance enter and exit with --set-noout=true --stop-osds=true --force."
 }
 
 run="${1}"

@@ -19,8 +19,8 @@ func RunOperations(name string, operations []Operation, dryRun, force bool) erro
 			err := ops.Run(name)
 			if err != nil {
 				logger.Errorf("%v", err)
-				// Skip the error if forced
 				if force {
+					logger.Warnf("ignored '%v' because it's forced.", err)
 					continue
 				}
 				return err
@@ -85,10 +85,10 @@ func (o *CheckOsdOkToStopOps) Run(name string) error {
 	}
 
 	if !testSafeStop(OsdsToCheck) {
-		return fmt.Errorf("osd.%v cannot be safely stopped", OsdsToCheck)
+		return fmt.Errorf("osds.%v cannot be safely stopped", OsdsToCheck)
 	}
 
-	logger.Infof("osd.%v can be safely stopped.", OsdsToCheck)
+	logger.Infof("osds.%v can be safely stopped.", OsdsToCheck)
 	return nil
 }
 

@@ -486,7 +486,9 @@ jobs:
         ~/actionutils.sh headexec wait_for_osds 4
 
     - name: Wait for ceph cluster to settle
-      run: sleep 30
+      run: |
+        sleep 30
+        ~/actionutils.sh headexec verify_health
 
     - name: Test dry run maintenance enter
       run: ~/actionutils.sh test_dry_run_maintenance_enter node-wrk1
