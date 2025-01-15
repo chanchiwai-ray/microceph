@@ -13,7 +13,7 @@ import (
 	"github.com/canonical/microceph/microceph/api/types"
 )
 
-// ExitMaintenance sends the request to '/ops/maintenance/{node}' endpoint to bring a node out of
+// ExitMaintenance sends the request to '/ops/maintenance' endpoint to bring a node out of
 // maintenance mode.
 func ExitMaintenance(ctx context.Context, c *client.Client, node string, dryRun bool) (types.MaintenancePlan, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, time.Second*120)
@@ -35,7 +35,7 @@ func ExitMaintenance(ctx context.Context, c *client.Client, node string, dryRun 
 	return plan, nil
 }
 
-// EnterMaintenance sends the request to '/ops/maintenance/' endpoint to bring a node into
+// EnterMaintenance sends the request to '/ops/maintenance' endpoint to bring a node into
 // maintenance mode.
 func EnterMaintenance(ctx context.Context, c *client.Client, node string, force, dryRun, setNoout, stopOsds bool) (types.MaintenancePlan, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, time.Second*120)

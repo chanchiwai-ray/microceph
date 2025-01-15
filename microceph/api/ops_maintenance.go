@@ -15,8 +15,8 @@ import (
 
 // /ops/maintenance endpoint.
 var opsMaintenanceCmd = rest.Endpoint{
-	Path: "ops/maintenance/",
-	Put:  rest.EndpointAction{Handler: cmdPutMaintenance, ProxyTarget: false},
+	Path: "ops/maintenance",
+	Put:  rest.EndpointAction{Handler: cmdPutMaintenance, ProxyTarget: true},
 }
 
 // cmdPutMaintenance bring a node in or out of maintenance
