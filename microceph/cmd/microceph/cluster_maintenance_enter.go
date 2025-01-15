@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
+	"strings"
 
-	"github.com/canonical/microceph/microceph/ceph"
 	"github.com/canonical/microceph/microceph/client"
 )
 
@@ -47,32 +48,12 @@ func (c *cmdClusterMaintenanceEnter) Run(cmd *cobra.Command, args []string) erro
 		return err
 	}
 
-	name := args[0]
-	clusterOps := ceph.ClusterOps{CephClient: client.MClient, ClusterClient: cli}
-	operations := []ceph.Operation{
-		&ceph.CheckNodeInClusterOps{ClusterOps: clusterOps},
-		&ceph.CheckOsdOkToStopOps{ClusterOps: clusterOps},
-		&ceph.CheckNonOsdSvcEnoughOps{ClusterOps: clusterOps, MinMon: 3, MinMds: 1, MinMgr: 1},
-	}
-
-	// optionally set noout
-	if c.flagSetNoout {
-		operations = append(operations, []ceph.Operation{
-			&ceph.SetNooutOps{ClusterOps: clusterOps},
-			&ceph.AssertNooutFlagSetOps{ClusterOps: clusterOps},
-		}...)
-	}
-
-	// optionally stop osd service
-	if c.flagStopOsds {
-		operations = append(operations, []ceph.Operation{
-			&ceph.StopOsdOps{ClusterOps: clusterOps},
-		}...)
-	}
-
-	err = ceph.RunOperations(name, operations, c.flagDryRun, c.flagForce)
+	plan, err := client.EnterMaintenance(context.Background(), cli, args[0], c.flagForce, c.flagDryRun, c.flagSetNoout, c.flagStopOsds)
 	if err != nil {
 		return fmt.Errorf("failed to enter maintenance mode: %v", err)
+	}
+	if len(plan) != 0 {
+		fmt.Println(strings.Join(plan, "\n"))
 	}
 
 	return nil

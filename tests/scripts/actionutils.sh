@@ -880,32 +880,32 @@ function test_dry_run_maintenance_enter() {
     # Count expected steps when --set-noout=false --stop-osds=false
     lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=false --stop-osds=false --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "3" ]; then
-        echo "Expect 3 steps in the action plan."
+    if [ $lines != "2" ]; then
+        echo "Expect 2 steps in the action plan."
         exit 1;
     fi
 
     # Count expected steps when --set-noout=false --stop-osds=true
     lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=false --stop-osds=true --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "4" ]; then
-        echo "Expect 4 steps in the action plan."
+    if [ $lines != "3" ]; then
+        echo "Expect 3 steps in the action plan."
         exit 1;
     fi
 
     # Count expected steps when --set-noout=true --stop-osds=false
     lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=true --stop-osds=false --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "5" ]; then
-        echo "Expect 5 steps in the action plan."
+    if [ $lines != "4" ]; then
+        echo "Expect 4 steps in the action plan."
         exit 1;
     fi
 
     # Count expected steps when --set-noout=true --stop-osds=true
     lines=$(nodeexec $node "microceph cluster maintenance enter $node --set-noout=true --stop-osds=true --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "6" ]; then
-        echo "Expect 6 steps in the action plan."
+    if [ $lines != "5" ]; then
+        echo "Expect 5 steps in the action plan."
         exit 1;
     fi
 
@@ -926,8 +926,8 @@ function test_dry_run_maintenance_exit() {
     # Count expected steps
     lines=$(nodeexec $node "microceph cluster maintenance exit $node --dry-run | tee output.txt | wc -l")
     nodeexec $node "cat output.txt"
-    if [ $lines != "4" ]; then
-        echo "Expect 4 steps in the action plan."
+    if [ $lines != "3" ]; then
+        echo "Expect 3 steps in the action plan."
         exit 1;
     fi
 

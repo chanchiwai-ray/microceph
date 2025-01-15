@@ -1,20 +1,20 @@
 package ceph
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/canonical/lxd/shared/logger"
 
-	microCli "github.com/canonical/microcluster/v2/client"
-
-	"github.com/canonical/microceph/microceph/client"
+	"github.com/canonical/microcluster/v2/state"
 )
 
-// RunOperations runs the provided operations or prints out the action plan.
-func RunOperations(name string, operations []Operation, dryRun, force bool) error {
+// RunOperations runs the provided operations or return the action plan.
+func RunOperations(name string, operations []Operation, dryRun, force bool) ([]string, error) {
+	plan := []string{}
 	for _, ops := range operations {
 		if dryRun {
-			fmt.Println(ops.DryRun(name))
+			plan = append(plan, ops.DryRun(name))
 		} else {
 			err := ops.Run(name)
 			if err != nil {
@@ -23,11 +23,11 @@ func RunOperations(name string, operations []Operation, dryRun, force bool) erro
 					logger.Warnf("ignored '%v' because it's forced.", err)
 					continue
 				}
-				return err
+				return []string{}, err
 			}
 		}
 	}
-	return nil
+	return plan, nil
 }
 
 // Operation is a interface for ceph and microceph operations.
@@ -41,35 +41,8 @@ type Operation interface {
 
 // ClusterOps is the base struct for all operations.
 type ClusterOps struct {
-	CephClient    client.ClientInterface
-	ClusterClient *microCli.Client
-}
-
-// CheckNodeInClusterOps is an operation to check if a node is in the microceph cluster.
-type CheckNodeInClusterOps struct {
-	ClusterOps
-}
-
-// Run checks if a node is in the microceph cluster.
-func (o *CheckNodeInClusterOps) Run(name string) error {
-	clusterMembers, err := o.CephClient.GetClusterMembers(o.ClusterClient)
-	if err != nil {
-		return fmt.Errorf("error getting cluster members: %v", err)
-	}
-
-	for _, member := range clusterMembers {
-		if member == name {
-			logger.Infof("node '%s' is in the cluster.", name)
-			return nil
-		}
-	}
-
-	return fmt.Errorf("node '%s' not found", name)
-}
-
-// DryRun prints out the action plan.
-func (o *CheckNodeInClusterOps) DryRun(name string) string {
-	return fmt.Sprintf("Check if node '%s' is in the cluster.", name)
+	State   state.State
+	Context context.Context
 }
 
 // CheckOsdOkToStopOps is an operation to check if osds in a node are ok-to-stop.
@@ -99,9 +72,9 @@ func (o *CheckOsdOkToStopOps) DryRun(name string) string {
 }
 
 func (o *CheckOsdOkToStopOps) getOsds(name string) ([]int64, error) {
-	disks, err := o.CephClient.GetDisks(o.ClusterClient)
+	disks, err := ListOSD(o.Context, o.State)
 	if err != nil {
-		return []int64{}, fmt.Errorf("error getting disks: %v", err)
+		return []int64{}, fmt.Errorf("error listing disks: %v", err)
 	}
 
 	OsdsToCheck := []int64{}
@@ -124,9 +97,9 @@ type CheckNonOsdSvcEnoughOps struct {
 
 // Run checks if non-osds service in a node are enough.
 func (o *CheckNonOsdSvcEnoughOps) Run(name string) error {
-	services, err := o.CephClient.GetServices(o.ClusterClient)
+	services, err := ListServices(o.Context, o.State)
 	if err != nil {
-		return fmt.Errorf("error getting services: %v", err)
+		return fmt.Errorf("error listing services: %v", err)
 	}
 
 	remains := map[string]int{
@@ -228,7 +201,7 @@ type StopOsdOps struct {
 
 // Run stops the osd service for a node.
 func (o *StopOsdOps) Run(name string) error {
-	err := o.CephClient.PutOsds(o.ClusterClient, false, name)
+	err := SetOsdState(false)
 	if err != nil {
 		logger.Errorf("unable to stop osd service in node '%s': %v", name, err)
 		return err
@@ -249,7 +222,7 @@ type StartOsdOps struct {
 
 // Run starts the osd service for a node.
 func (o *StartOsdOps) Run(name string) error {
-	err := o.CephClient.PutOsds(o.ClusterClient, true, name)
+	err := SetOsdState(true)
 	if err != nil {
 		logger.Errorf("unable to start osd service in node '%s': %v", name, err)
 		return err
