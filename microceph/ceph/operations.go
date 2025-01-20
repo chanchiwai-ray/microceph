@@ -10,24 +10,31 @@ import (
 )
 
 // RunOperations runs the provided operations or return the action plan.
-func RunOperations(name string, operations []Operation, dryRun, force bool) ([]string, error) {
-	plan := []string{}
-	for _, ops := range operations {
+func RunOperations(name string, operations []Operation, dryRun, force bool) []Result {
+	results := []Result{}
+
+	for _, op := range operations {
+		result := Result{Name: op.GetName(), Error: "", Action: op.DryRun(name)}
 		if dryRun {
-			plan = append(plan, ops.DryRun(name))
+			results = append(results, result)
 		} else {
-			err := ops.Run(name)
+			err := op.Run(name)
 			if err != nil {
 				logger.Errorf("%v", err)
+				result.Error = fmt.Sprintf("%v", err)
+				results = append(results, result)
 				if force {
 					logger.Warnf("ignored '%v' because it's forced.", err)
 					continue
 				}
-				return []string{}, err
+				return results
+			} else {
+				results = append(results, result)
 			}
 		}
 	}
-	return plan, nil
+
+	return results
 }
 
 // Operation is a interface for ceph and microceph operations.
@@ -37,6 +44,15 @@ type Operation interface {
 
 	// DryRun returns the string representation of the operation.
 	DryRun(string) string
+
+	// GetName returns the name of the operation.
+	GetName() string
+}
+
+type Result struct {
+	Name   string `json:"name"`
+	Error  string `json:"error"`
+	Action string `json:"action"`
 }
 
 // ClusterOps is the base struct for all operations.
@@ -86,6 +102,11 @@ func (o *CheckOsdOkToStopOps) getOsds(name string) ([]int64, error) {
 	return OsdsToCheck, nil
 }
 
+// GetName returns the name of the action
+func (o *CheckOsdOkToStopOps) GetName() string {
+	return "check-osd-ok-to-stop-ops"
+}
+
 // CheckNonOsdSvcEnoughOps is an operation to check if non-osd service in a node are enough.
 type CheckNonOsdSvcEnoughOps struct {
 	ClusterOps
@@ -129,6 +150,11 @@ func (o *CheckNonOsdSvcEnoughOps) DryRun(name string) string {
 	return fmt.Sprintf("Check if there are at least %d mon, %d mds, and %d mgr services in the cluster besides those in node '%s'", o.MinMon, o.MinMds, o.MinMgr, name)
 }
 
+// GetName returns the name of the action
+func (o *CheckNonOsdSvcEnoughOps) GetName() string {
+	return "check-non-osd-svc-enough-ops"
+}
+
 // SetNooutOps is an operation to set noout for the ceph cluster.
 type SetNooutOps struct {
 	ClusterOps
@@ -146,6 +172,11 @@ func (o *SetNooutOps) Run(name string) error {
 // DryRun prints out the action plan.
 func (o *SetNooutOps) DryRun(name string) string {
 	return "Run `ceph osd set noout`."
+}
+
+// GetName returns the name of the action
+func (o *SetNooutOps) GetName() string {
+	return "set-noout-ops"
 }
 
 // AssertNooutFlagSetOps is an operation to assert noout has been set for the ceph cluster.
@@ -171,6 +202,11 @@ func (o *AssertNooutFlagSetOps) DryRun(name string) string {
 	return "Assert osd has 'noout' flag set."
 }
 
+// GetName returns the name of the action
+func (o *AssertNooutFlagSetOps) GetName() string {
+	return "assert-noout-flag-set-ops"
+}
+
 // AssertNooutFlagUnsetOps is an operation to assert noout has been unset for the ceph cluster.
 type AssertNooutFlagUnsetOps struct {
 	ClusterOps
@@ -187,6 +223,11 @@ func (o *AssertNooutFlagUnsetOps) Run(name string) error {
 	}
 	logger.Info("osd has 'noout' flag unset.")
 	return nil
+}
+
+// GetName returns the name of the action
+func (o *AssertNooutFlagUnsetOps) GetName() string {
+	return "assert-noout-flag-unset-ops"
 }
 
 // DryRun prints out the action plan.
@@ -215,6 +256,11 @@ func (o *StopOsdOps) DryRun(name string) string {
 	return fmt.Sprintf("Stop osd service in node '%s'.", name)
 }
 
+// GetName returns the name of the action
+func (o *StopOsdOps) GetName() string {
+	return "stop-osd-ops"
+}
+
 // StartOsdOps is an operation to start osd service for a node.
 type StartOsdOps struct {
 	ClusterOps
@@ -236,6 +282,11 @@ func (o *StartOsdOps) DryRun(name string) string {
 	return fmt.Sprintf("Start osd service in node '%s'.", name)
 }
 
+// GetName returns the name of the action
+func (o *StartOsdOps) GetName() string {
+	return "start-osd-ops"
+}
+
 // UnsetNooutOps is an operation to unset noout for the ceph cluster.
 type UnsetNooutOps struct {
 	ClusterOps
@@ -254,4 +305,9 @@ func (o *UnsetNooutOps) Run(name string) error {
 // DryRun prints out the action plan.
 func (o *UnsetNooutOps) DryRun(name string) string {
 	return "Run `ceph osd unset noout`."
+}
+
+// GetName returns the name of the action
+func (o *UnsetNooutOps) GetName() string {
+	return "unset-noout-ops"
 }

@@ -1,15 +1,11 @@
 package ceph
 
-import (
-	"fmt"
-)
-
 type Maintenance struct {
 	Node       string
 	ClusterOps ClusterOps
 }
 
-func (m *Maintenance) Exit(dryRun bool) ([]string, error) {
+func (m *Maintenance) Exit(dryRun bool) []Result {
 	// idempotently unset noout and start osd service
 	operations := []Operation{
 		&UnsetNooutOps{ClusterOps: m.ClusterOps},
@@ -17,15 +13,10 @@ func (m *Maintenance) Exit(dryRun bool) ([]string, error) {
 		&StartOsdOps{ClusterOps: m.ClusterOps},
 	}
 
-	plan, err := RunOperations(m.Node, operations, dryRun, false)
-	if err != nil {
-		return []string{}, fmt.Errorf("failed to exit maintenance mode: %v", err)
-	}
-
-	return plan, nil
+	return RunOperations(m.Node, operations, dryRun, false)
 }
 
-func (m *Maintenance) Enter(force, dryRun, setNoout, stopOsds bool) ([]string, error) {
+func (m *Maintenance) Enter(force, dryRun, setNoout, stopOsds bool) []Result {
 	operations := []Operation{
 		&CheckOsdOkToStopOps{ClusterOps: m.ClusterOps},
 		&CheckNonOsdSvcEnoughOps{ClusterOps: m.ClusterOps, MinMon: 3, MinMds: 1, MinMgr: 1},
@@ -46,10 +37,5 @@ func (m *Maintenance) Enter(force, dryRun, setNoout, stopOsds bool) ([]string, e
 		}...)
 	}
 
-	plan, err := RunOperations(m.Node, operations, dryRun, force)
-	if err != nil {
-		return []string{}, fmt.Errorf("failed to enter maintenance mode: %v", err)
-	}
-
-	return plan, nil
+	return RunOperations(m.Node, operations, dryRun, force)
 }

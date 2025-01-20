@@ -1,7 +1,13 @@
 // Package types provides shared types and structs.
 package types
 
-type MaintenancePlan []string
+type MaintenanceResult struct {
+	Name   string `json:"name"`
+	Error  string `json:"error"`
+	Action string `json:"action"`
+}
+
+type MaintenanceResults []MaintenanceResult
 
 // Options for bringing a node into or out of maintenance
 type MaintenanceFlags struct {

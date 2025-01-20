@@ -42,7 +42,7 @@ var Servers = map[string]rest.Server{
 					opsReplicationWorkloadCmd,
 					opsReplicationResourceCmd,
 					// Maintenance APIs
-					opsMaintenanceCmd,
+					opsMaintenanceNodeCmd,
 					// OSDs APIs
 					osdCmd,
 				},

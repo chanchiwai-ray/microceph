@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/shared/logger"
@@ -11,26 +12,31 @@ import (
 	"github.com/canonical/microceph/microceph/ceph"
 	"github.com/canonical/microcluster/v2/rest"
 	"github.com/canonical/microcluster/v2/state"
+	"github.com/gorilla/mux"
 )
 
-// /ops/maintenance endpoint.
-var opsMaintenanceCmd = rest.Endpoint{
-	Path: "ops/maintenance",
+// /ops/maintenance/{node} endpoint.
+var opsMaintenanceNodeCmd = rest.Endpoint{
+	Path: "ops/maintenance/{node}",
 	Put:  rest.EndpointAction{Handler: cmdPutMaintenance, ProxyTarget: true},
 }
 
 // cmdPutMaintenance bring a node in or out of maintenance
 func cmdPutMaintenance(s state.State, r *http.Request) response.Response {
+	var results []ceph.Result
 	var maintenancePut types.MaintenancePut
-	var plan types.MaintenancePlan
 
-	err := json.NewDecoder(r.Body).Decode(&maintenancePut)
+	node, err := url.PathUnescape(mux.Vars(r)["node"])
+	if err != nil {
+		return response.BadRequest(err)
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&maintenancePut)
 	if err != nil {
 		logger.Errorf("failed decoding body: %v", err)
 		return response.InternalError(err)
 	}
 
-	node := s.Name()
 	maintenance := ceph.Maintenance{
 		Node: node,
 		ClusterOps: ceph.ClusterOps{
@@ -42,17 +48,13 @@ func cmdPutMaintenance(s state.State, r *http.Request) response.Response {
 	status := maintenancePut.Status
 	switch status {
 	case "maintenance":
-		plan, err = maintenance.Enter(maintenancePut.Force, maintenancePut.DryRun, maintenancePut.SetNoout, maintenancePut.StopOsds)
+		results = maintenance.Enter(maintenancePut.Force, maintenancePut.DryRun, maintenancePut.SetNoout, maintenancePut.StopOsds)
 	case "non-maintenance":
-		plan, err = maintenance.Exit(maintenancePut.DryRun)
+		results = maintenance.Exit(maintenancePut.DryRun)
 	default:
 		err = fmt.Errorf("unknown status encounter: '%s', can only be 'maintenance' or 'non-maintenance'", status)
+		return response.BadRequest(err)
 	}
 
-	if err != nil {
-		logger.Errorf("failed bring the node (%s) in or out of maintenance: %v", node, err)
-		return response.SyncResponse(false, err)
-	}
-
-	return response.SyncResponse(true, plan)
+	return response.SyncResponse(true, results)
 }

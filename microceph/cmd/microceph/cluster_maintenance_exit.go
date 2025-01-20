@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
-	"strings"
 
 	"github.com/canonical/microceph/microceph/client"
 )
@@ -43,12 +42,22 @@ func (c *cmdClusterMaintenanceExit) Run(cmd *cobra.Command, args []string) error
 		return err
 	}
 
-	plan, err := client.ExitMaintenance(context.Background(), cli, args[0], c.flagDryRun)
+	results, err := client.ExitMaintenance(context.Background(), cli, args[0], c.flagDryRun)
 	if err != nil {
 		return fmt.Errorf("failed to enter maintenance mode: %v", err)
 	}
-	if len(plan) != 0 {
-		fmt.Println(strings.Join(plan, "\n"))
+
+	for _, result := range results {
+		if c.flagDryRun {
+			fmt.Println(result.Action)
+		} else {
+			errMessage := result.Error
+			if errMessage == "" {
+				fmt.Printf("%s (passed)\n", result.Action)
+			} else {
+				fmt.Printf("%s (failed: %s)\n", result.Action, errMessage)
+			}
+		}
 	}
 
 	return nil
