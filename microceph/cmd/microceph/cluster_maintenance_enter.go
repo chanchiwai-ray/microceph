@@ -68,7 +68,8 @@ func (c *cmdClusterMaintenanceEnter) Run(cmd *cobra.Command, args []string) erro
 		}
 	}
 
-	if len(errMessages) != 0 {
+	// Return the error messages if there are errors and is not forced
+	if len(errMessages) != 0 && !c.flagForce {
 		return fmt.Errorf("[%s]", strings.Join(errMessages, " "))
 	}
 
