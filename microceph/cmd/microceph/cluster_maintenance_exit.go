@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
+	"strings"
 
 	"github.com/canonical/microceph/microceph/client"
 )
@@ -47,6 +48,7 @@ func (c *cmdClusterMaintenanceExit) Run(cmd *cobra.Command, args []string) error
 		return fmt.Errorf("failed to enter maintenance mode: %v", err)
 	}
 
+	errMessages := []string{}
 	for _, result := range results {
 		if c.flagDryRun {
 			fmt.Println(result.Action)
@@ -55,9 +57,14 @@ func (c *cmdClusterMaintenanceExit) Run(cmd *cobra.Command, args []string) error
 			if errMessage == "" {
 				fmt.Printf("%s (passed)\n", result.Action)
 			} else {
+				errMessages = append(errMessages, fmt.Sprintf("(%s)", errMessage))
 				fmt.Printf("%s (failed: %s)\n", result.Action, errMessage)
 			}
 		}
+	}
+
+	if len(errMessages) != 0 {
+		return fmt.Errorf("[%s]", strings.Join(errMessages, " "))
 	}
 
 	return nil
