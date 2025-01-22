@@ -13,10 +13,11 @@ import (
 type cmdClusterMaintenanceEnter struct {
 	common *CmdControl
 
-	flagForce    bool
-	flagDryRun   bool
-	flagSetNoout bool
-	flagStopOsds bool
+	flagForce     bool
+	flagDryRun    bool
+	flagSetNoout  bool
+	flagStopOsds  bool
+	flagCheckOnly bool
 }
 
 func (c *cmdClusterMaintenanceEnter) Command() *cobra.Command {
@@ -30,6 +31,7 @@ func (c *cmdClusterMaintenanceEnter) Command() *cobra.Command {
 	cmd.Flags().BoolVar(&c.flagDryRun, "dry-run", false, "Dry run the command.")
 	cmd.Flags().BoolVar(&c.flagSetNoout, "set-noout", true, "Stop CRUSH from rebalancing the cluster.")
 	cmd.Flags().BoolVar(&c.flagStopOsds, "stop-osds", false, "Stop the OSDS when entering maintenance mode.")
+	cmd.Flags().BoolVar(&c.flagCheckOnly, "check-only", false, "Only run the preflight checks.")
 	return cmd
 }
 
@@ -48,7 +50,7 @@ func (c *cmdClusterMaintenanceEnter) Run(cmd *cobra.Command, args []string) erro
 		return err
 	}
 
-	results, err := client.EnterMaintenance(context.Background(), cli, args[0], c.flagForce, c.flagDryRun, c.flagSetNoout, c.flagStopOsds)
+	results, err := client.EnterMaintenance(context.Background(), cli, args[0], c.flagForce, c.flagDryRun, c.flagSetNoout, c.flagStopOsds, c.flagCheckOnly)
 	if err != nil {
 		return fmt.Errorf("failed to enter maintenance mode: %v", err)
 	}

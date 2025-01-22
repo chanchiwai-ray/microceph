@@ -13,7 +13,8 @@ import (
 type cmdClusterMaintenanceExit struct {
 	common *CmdControl
 
-	flagDryRun bool
+	flagDryRun    bool
+	flagCheckOnly bool
 }
 
 func (c *cmdClusterMaintenanceExit) Command() *cobra.Command {
@@ -24,6 +25,7 @@ func (c *cmdClusterMaintenanceExit) Command() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&c.flagDryRun, "dry-run", false, "Dry run the command.")
+	cmd.Flags().BoolVar(&c.flagCheckOnly, "check-only", false, "Only run the preflight checks.")
 
 	return cmd
 }
@@ -43,7 +45,7 @@ func (c *cmdClusterMaintenanceExit) Run(cmd *cobra.Command, args []string) error
 		return err
 	}
 
-	results, err := client.ExitMaintenance(context.Background(), cli, args[0], c.flagDryRun)
+	results, err := client.ExitMaintenance(context.Background(), cli, args[0], c.flagDryRun, c.flagCheckOnly)
 	if err != nil {
 		return fmt.Errorf("failed to enter maintenance mode: %v", err)
 	}

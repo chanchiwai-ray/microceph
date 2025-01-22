@@ -11,7 +11,8 @@ type MaintenanceResults []MaintenanceResult
 
 // Options for bringing a node into or out of maintenance
 type MaintenanceFlags struct {
-	DryRun bool `json:"dry_run"`
+	DryRun    bool `json:"dry_run"`
+	CheckOnly bool `json:"check_only"`
 }
 
 // Options for bringing a node into maintenance

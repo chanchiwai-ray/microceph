@@ -15,14 +15,14 @@ import (
 
 // ExitMaintenance sends the request to '/ops/maintenance/{node}' endpoint to bring a node out of
 // maintenance mode.
-func ExitMaintenance(ctx context.Context, c *client.Client, node string, dryRun bool) (types.MaintenanceResults, error) {
+func ExitMaintenance(ctx context.Context, c *client.Client, node string, dryRun, checkOnly bool) (types.MaintenanceResults, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, time.Second*120)
 	defer cancel()
 
 	var results types.MaintenanceResults
 	data := types.MaintenancePut{
 		Status:           "non-maintenance",
-		MaintenanceFlags: types.MaintenanceFlags{DryRun: dryRun},
+		MaintenanceFlags: types.MaintenanceFlags{DryRun: dryRun, CheckOnly: checkOnly},
 	}
 
 	// still need to useTarget because some ops need to run on target node
@@ -38,14 +38,14 @@ func ExitMaintenance(ctx context.Context, c *client.Client, node string, dryRun 
 
 // EnterMaintenance sends the request to '/ops/maintenance/{node}' endpoint to bring a node into
 // maintenance mode.
-func EnterMaintenance(ctx context.Context, c *client.Client, node string, force, dryRun, setNoout, stopOsds bool) (types.MaintenanceResults, error) {
+func EnterMaintenance(ctx context.Context, c *client.Client, node string, force, dryRun, setNoout, stopOsds, checkOnly bool) (types.MaintenanceResults, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, time.Second*120)
 	defer cancel()
 
 	var results types.MaintenanceResults
 	data := types.MaintenancePut{
 		Status:                "maintenance",
-		MaintenanceFlags:      types.MaintenanceFlags{DryRun: dryRun},
+		MaintenanceFlags:      types.MaintenanceFlags{DryRun: dryRun, CheckOnly: checkOnly},
 		MaintenanceEnterFlags: types.MaintenanceEnterFlags{Force: force, SetNoout: setNoout, StopOsds: stopOsds},
 	}
 
