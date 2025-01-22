@@ -56,5 +56,10 @@ func cmdPutMaintenance(s state.State, r *http.Request) response.Response {
 		return response.BadRequest(err)
 	}
 
+	for _, result := range results {
+		if result.Error != "" && !maintenancePut.Force {
+			return response.SyncResponse(false, results)
+		}
+	}
 	return response.SyncResponse(true, results)
 }

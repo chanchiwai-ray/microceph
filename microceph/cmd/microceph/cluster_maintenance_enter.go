@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
+	"strings"
 
 	"github.com/canonical/microceph/microceph/client"
 )
